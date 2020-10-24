@@ -4,10 +4,19 @@
 #include <stdio.h>
 #include <strsafe.h>
 
-#define BUFFER_SIZE 512*500 //размер массива данных 250кб
+#define BUFFER_SIZE 512*100 //размер массива данных 250кб
 #define COUNT 4195 //кол-во записей в файл тестового массива (итоговый файл ~1г)
 
 HANDLE writeFile, readFile;
+
+void writeTest();
+void readTest();
+
+int __cdecl _tmain(int argc, TCHAR* argv[])
+{
+    writeTest();
+    readTest();
+}
 
 void writeTest() {
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
@@ -19,17 +28,17 @@ void writeTest() {
         DataBuffer[i] = 't';
 
 
-    DWORD dwBytesToWrite = (DWORD)strlen(DataBuffer);
+    DWORD dwBytesToWrite = (DWORD)sizeof(DataBuffer);
     DWORD dwBytesWritten = 0;
     BOOL bErrorFlag = FALSE;
 
     //создаем файл "test.bin", после закрытия хендла файл будет удален
-    HANDLE writeFile = CreateFile("test.bin",
+    HANDLE writeFile = CreateFile(_T("test.bin"),
         GENERIC_WRITE,
         0,
         NULL,
         CREATE_NEW,
-        NULL, //FILE_FLAG_DELETE_ON_CLOSE
+        FILE_FLAG_NO_BUFFERING | FILE_FLAG_DELETE_ON_CLOSE, //FILE_FLAG_DELETE_ON_CLOSE
         NULL);
 
     //если файл не создался
@@ -48,7 +57,7 @@ void writeTest() {
         bErrorFlag = WriteFile(
             writeFile,
             DataBuffer,
-            dwBytesToWrite,
+            BUFFER_SIZE,
             &dwBytesWritten,
             NULL);
     }
@@ -67,6 +76,7 @@ void writeTest() {
     }
     else
     {
+        
         if (dwBytesWritten != dwBytesToWrite)
         {
             // This is an error because a synchronous write that results in
@@ -102,7 +112,7 @@ void readTest() {
     BOOL bErrorFlag = FALSE;
 
     //открываем файл "test.bin"
-    HANDLE readFile = CreateFile("test.bin",
+    HANDLE readFile = CreateFile(_T("test.bin"),
         GENERIC_READ,
         FILE_SHARE_READ,
         NULL,
@@ -158,10 +168,3 @@ void readTest() {
     CloseHandle(readFile);
 }
 
-int __cdecl _tmain(int argc, TCHAR* argv[])
-{
-    writeTest();
-    readTest();
-
-    system("Pause");
-}
