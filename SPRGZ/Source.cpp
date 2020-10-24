@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <strsafe.h>
 
-#define BUFFER_SIZE 512*100 //размер массива данных 250кб
-#define COUNT 4195 //кол-во записей в файл тестового массива (итоговый файл ~1г)
+#define BUFFER_SIZE 1024*100000 //размер массива данных 250кб
+#define COUNT 5 //кол-во записей в файл тестового массива (итоговый файл ~1г)
 
 HANDLE writeFile, readFile;
 
@@ -15,7 +15,7 @@ void readTest();
 int __cdecl _tmain(int argc, TCHAR* argv[])
 {
     writeTest();
-    readTest();
+  //  readTest();
 }
 
 void writeTest() {
@@ -23,14 +23,16 @@ void writeTest() {
     LARGE_INTEGER Frequency;
 
     //тестовый массив данных
-    char DataBuffer[BUFFER_SIZE];
+    char* DataBuffer = new char[BUFFER_SIZE];
     for (int i = 0; i < BUFFER_SIZE; i++)
         DataBuffer[i] = 't';
 
 
-    DWORD dwBytesToWrite = (DWORD)sizeof(DataBuffer);
-    DWORD dwBytesWritten = 0;
+    DWORD dwBytesToWrite = BUFFER_SIZE * COUNT;
+    DWORD dwBytesWritten = 0, sumWritten = 0;
     BOOL bErrorFlag = FALSE;
+    double totalTime = 0;
+
 
     //создаем файл "test.bin", после закрытия хендла файл будет удален
     HANDLE writeFile = CreateFile(_T("test.bin"),
@@ -49,25 +51,32 @@ void writeTest() {
 
     //начинаем отсчет времени
     _tprintf(TEXT("Testing...\n"));
-    QueryPerformanceFrequency(&Frequency);
-    QueryPerformanceCounter(&StartingTime);
 
-    //записываем в файл count раз массива данных
-    for (int i = 0; i < COUNT; i++) {
+    QueryPerformanceFrequency(&Frequency);
+
+    //записываем в файл count раз массива данныхъ
+    for (int i = 0; i < COUNT; ++i)
+    {
+        QueryPerformanceCounter(&StartingTime);
+
         bErrorFlag = WriteFile(
             writeFile,
             DataBuffer,
             BUFFER_SIZE,
             &dwBytesWritten,
             NULL);
+
+        sumWritten += dwBytesWritten;
+
+        QueryPerformanceCounter(&EndingTime);
+
+        //подсчитываем время
+        ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
+        ElapsedMicroseconds.QuadPart *= 1000000;
+        ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
+
+        totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
     }
-
-    QueryPerformanceCounter(&EndingTime);
-
-    //подсчитываем время
-    ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
-    ElapsedMicroseconds.QuadPart *= 1000000;
-    ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
 
     //отслеживаем ошибки
     if (FALSE == bErrorFlag)
@@ -76,8 +85,7 @@ void writeTest() {
     }
     else
     {
-        
-        if (dwBytesWritten != dwBytesToWrite)
+        if (sumWritten != dwBytesToWrite)
         {
             // This is an error because a synchronous write that results in
             // success (WriteFile returns TRUE) should write all data as
@@ -89,11 +97,10 @@ void writeTest() {
         {
             //выводим информацию про результаты тестирования
             _tprintf(TEXT("Wrote %d bytes successfully.\n"), dwBytesWritten * COUNT);
-            double time = (ElapsedMicroseconds.QuadPart / (double)1000000); //to seconds
-            double totalmb = (((dwBytesWritten * COUNT) / (double)1024)) / (double)1024;
+            double totalmb = ((sumWritten / (double)1024)) / (double)1024;
             _tprintf(TEXT("Wrote %lf mb successfully.\n"), totalmb);
-            _tprintf(TEXT("Elapsed time = %lf seconds\n"), time);
-            _tprintf(TEXT("Your write speed is %lf mb/sec\n\n"), (double)totalmb / time);
+            _tprintf(TEXT("Elapsed time = %lf seconds\n"), totalTime);
+            _tprintf(TEXT("Your write speed is %lf mb/sec\n\n"), (double)totalmb / totalTime);
         }
     }
 
