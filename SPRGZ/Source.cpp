@@ -9,16 +9,16 @@
 
 HANDLE writeFile, readFile;
 
-void writeTest();
+void writeTest(DWORD);
 void readTest();
 
 int __cdecl _tmain(int argc, TCHAR* argv[])
 {
-    writeTest();
-  //  readTest();
+   //  writeTest(FILE_FLAG_DELETE_ON_CLOSE);
+    readTest();
 }
 
-void writeTest() {
+void writeTest(DWORD atr) {
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
     LARGE_INTEGER Frequency;
 
@@ -40,7 +40,7 @@ void writeTest() {
         0,
         NULL,
         CREATE_NEW,
-        FILE_FLAG_NO_BUFFERING | FILE_FLAG_DELETE_ON_CLOSE, //FILE_FLAG_DELETE_ON_CLOSE
+        FILE_FLAG_NO_BUFFERING | atr, //FILE_FLAG_DELETE_ON_CLOSE
         NULL);
 
     //если файл не создался
@@ -66,8 +66,6 @@ void writeTest() {
             &dwBytesWritten,
             NULL);
 
-        sumWritten += dwBytesWritten;
-
         QueryPerformanceCounter(&EndingTime);
 
         //подсчитываем время
@@ -75,7 +73,10 @@ void writeTest() {
         ElapsedMicroseconds.QuadPart *= 1000000;
         ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
 
+        sumWritten += dwBytesWritten;
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
+
+        Sleep(1000);
     }
 
     //отслеживаем ошибки
@@ -96,7 +97,6 @@ void writeTest() {
         else
         {
             //выводим информацию про результаты тестирования
-            _tprintf(TEXT("Wrote %d bytes successfully.\n"), dwBytesWritten * COUNT);
             double totalmb = ((sumWritten / (double)1024)) / (double)1024;
             _tprintf(TEXT("Wrote %lf mb successfully.\n"), totalmb);
             _tprintf(TEXT("Elapsed time = %lf seconds\n"), totalTime);
@@ -108,11 +108,13 @@ void writeTest() {
 }
 
 void readTest() {
+    writeTest(NULL);
+
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
     LARGE_INTEGER Frequency;
 
     //массив данных
-    char DataBufferRead[BUFFER_SIZE];
+    char* DataBuffer = new char[BUFFER_SIZE];
 
     DWORD dwBytesRead = 0;
     DWORD dwBytesTotalRead = 0;
@@ -124,7 +126,7 @@ void readTest() {
         FILE_SHARE_READ,
         NULL,
         OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
+        FILE_FLAG_NO_BUFFERING | FILE_ATTRIBUTE_NORMAL,
         NULL);
 
     //если файл не открылся
@@ -135,25 +137,35 @@ void readTest() {
 
     //начинаем отсчет времени
     _tprintf(TEXT("Testing...\n"));
-    QueryPerformanceFrequency(&Frequency);
-    QueryPerformanceCounter(&StartingTime);
 
-    //считываем из файла 
-    
+    DWORD sumRead = 0;
+    double totalTime = 0;
+    QueryPerformanceFrequency(&Frequency);
+
+    //записываем в файл count раз массива данныхъ
+    for (int i = 0; i < COUNT; ++i)
+    {
+        QueryPerformanceCounter(&StartingTime);
+
         bErrorFlag = ReadFile(
             readFile,
-            DataBufferRead,
+            DataBuffer,
             (BUFFER_SIZE),
             &dwBytesRead,
             NULL);
-    
 
-    QueryPerformanceCounter(&EndingTime);
+        QueryPerformanceCounter(&EndingTime);
 
-    //подсчитываем время
-    ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
-    ElapsedMicroseconds.QuadPart *= 1000000;
-    ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
+        //подсчитываем время
+        ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
+        ElapsedMicroseconds.QuadPart *= 1000000;
+        ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
+
+        sumRead += dwBytesRead;
+        totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
+
+        Sleep(1000);
+    }
 
     //отслеживаем ошибки
     if (FALSE == bErrorFlag)
@@ -163,13 +175,11 @@ void readTest() {
     else
     {
         //выводим информацию про результаты тестирования
-        _tprintf(TEXT("Read %d bytes successfully.\n"), dwBytesRead);
-        double time = (ElapsedMicroseconds.QuadPart / (double)1000000); //to seconds
-        double totalmb = (((dwBytesRead) / (double)1024)) / (double)1024;
+        double totalmb = (((sumRead) / (double)1024)) / (double)1024;
 
         _tprintf(TEXT("Read %lf mb successfully.\n"), totalmb);
-        _tprintf(TEXT("Elapsed time = %lf seconds\n"), time);
-        _tprintf(TEXT("Your read speed is %lf mb/sec\n\n"), (double)totalmb / time);
+        _tprintf(TEXT("Elapsed time = %lf seconds\n"), totalTime);
+        _tprintf(TEXT("Your read speed is %lf mb/sec\n\n"), (double)totalmb / totalTime);
     }
 
     CloseHandle(readFile);
