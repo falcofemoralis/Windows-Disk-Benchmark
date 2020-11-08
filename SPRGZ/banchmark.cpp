@@ -13,10 +13,10 @@
 using namespace std;
 
 struct Config {
-    int bufferSize;
-    int mode;
-    const char* diskPath;
-    int countTests;
+    DWORD bufferSize;
+    DWORD mode;
+    const TCHAR* diskPath;
+    DWORD countTests;
 };
 Config userConfig;
 
@@ -28,15 +28,15 @@ RESULT writeToFile(HANDLE, DWORD);
 void readTest();
 
 
-int __cdecl _tmain(int argc, TCHAR* argv[])
-{
-    userConfig.bufferSize = 16 * MB;
-    userConfig.mode = FILE_FLAG_RANDOM_ACCESS;
-    userConfig.countTests = 5;
-    writeTest();
-    //readTest();
-    system("Pause");
-} 
+//int __cdecl _tmain(int argc, TCHAR* argv[])
+//{
+//    userConfig.bufferSize = 16 * MB;
+//    userConfig.mode = FILE_FLAG_RANDOM_ACCESS;
+//    userConfig.countTests = 5;
+//    writeTest();
+//    //readTest();
+//    system("Pause");
+//} 
 
 void writeTest() {
     //создаем файл "test.bin", после закрытия хендла файл будет удален

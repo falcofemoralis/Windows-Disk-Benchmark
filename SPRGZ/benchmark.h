@@ -13,9 +13,10 @@
 using namespace std;
 
 struct Config {
-    int bufferSize;
-    int type;
-    const char* diskPath;
+    DWORD bufferSize;
+    DWORD mode;
+    const TCHAR* diskPath;
+    DWORD countTests;
 };
 extern Config userConfig;
 
