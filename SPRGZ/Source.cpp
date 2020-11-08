@@ -17,7 +17,7 @@ const DWORD FILE_SIZE = 1*GB; //1гб
 
 void writeTest(DWORD);
 RESULT writeToFile(HANDLE, DWORD);
-void readTest();
+void readTest(); //Not ready yet
 
 int __cdecl _tmain(int argc, TCHAR* argv[])
 {
