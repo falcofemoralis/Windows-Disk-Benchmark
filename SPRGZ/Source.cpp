@@ -12,20 +12,22 @@
 
 using namespace std;
 
-const DWORD BUFFER_SIZES[] = { 1*KB, 4*KB, 8*KB, 1*MB, 2*MB, 4*MB, 8*MB, 16*MB }; //16 по варианту
-const DWORD FILE_SIZE = 1*GB; //1гб
+const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; //16 по варианту
+const DWORD FILE_SIZE = 250 * MB; //1гб
 
 void writeTest(DWORD);
 RESULT writeToFile(HANDLE, DWORD);
 void readTest();
 
+/*
 int __cdecl _tmain(int argc, TCHAR* argv[])
 {
-    DWORD TESTS[] = { FILE_FLAG_WRITE_THROUGH, FILE_FLAG_NO_BUFFERING, FILE_FLAG_RANDOM_ACCESS, FILE_FLAG_SEQUENTIAL_SCAN };
+    DWORD TESTS[] = { FILE_FLAG_WRITE_THROUGH, FILE_FLAG_RANDOM_ACCESS, FILE_FLAG_SEQUENTIAL_SCAN };
 
-    for(int i=0;i< sizeof(TESTS) / sizeof(DWORD);i++)
-      writeTest(TESTS[i]);
-
+    for (int i = 0; i < sizeof(TESTS) / sizeof(DWORD); i++) {
+        _tprintf(TEXT("\n\nTesting %d... \n"), i + 1);
+        writeTest(TESTS[i]);
+    }
     //readTest();
     system("Pause");
 }
@@ -39,7 +41,7 @@ void writeTest(DWORD arg) {
         0,
         NULL,
         CREATE_NEW,
-        arg | FILE_FLAG_DELETE_ON_CLOSE, //FILE_FLAG_DELETE_ON_CLOSE
+        arg | FILE_FLAG_NO_BUFFERING | FILE_FLAG_DELETE_ON_CLOSE | FILE_FLAG_OVERLAPPED, //FILE_FLAG_DELETE_ON_CLOSE
         NULL);
 
     //если файл не создался
@@ -49,13 +51,14 @@ void writeTest(DWORD arg) {
     }
 
     DWORD arr_size = sizeof(BUFFER_SIZES) / sizeof(DWORD);
-    RESULT*test_times = new RESULT[arr_size];
+    RESULT* test_times = new RESULT[arr_size];
 
-    _tprintf(TEXT("Testing...\n"));
+
     for (DWORD i = 0; i < arr_size; i++)
     {
+        _tprintf(TEXT("Testing with buffer size %d kb.\n"), BUFFER_SIZES[i] / 1024);
         test_times[i] = writeToFile(writeFile, BUFFER_SIZES[i]);
-       
+
         //отслеживаем ошибки
         if (test_times[i].first == NULL)
         {
@@ -127,7 +130,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
 }
 
 void readTest() {
-  //  writeTest(NULL);
+    //  writeTest(NULL);
 
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
     LARGE_INTEGER Frequency;
@@ -203,4 +206,4 @@ void readTest() {
 
     CloseHandle(readFile);
 }
-
+*/
