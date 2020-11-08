@@ -1,33 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <Windows.h>
+#include <CommCtrl.h>
+
+#include "benchmark.h"
 
 #define ID_BT1 1
 #define ID_BT2 2
-
 #define cb_list_types_id 1
 #define cb_list_buffers_id 2
 
-#define KB 1024
-#define MB KB*1024
-#define GB MB*1024
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
-const char* types[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL", "Etc", "NO_BUFFERING"};
+const char* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL", "Etc", "NO_BUFFERING"};
 const char* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB" };
 int buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
-
-struct Config {
-	int bufferSize;
-	const char* type;
-	const char* diskPath;
-};
-
-Config userConfig;
-
-
+/*
 int main() {
+
 	WNDCLASS wcl;
 
 	memset(&wcl, 0, sizeof(WNDCLASS));
@@ -46,7 +36,7 @@ int main() {
 	}
 
 	return 0;
-}
+}*/
 
 // Структура с параметрами view объектов: x,y - координаты объекта, width,height - размеры view
 struct ViewParam {
@@ -70,7 +60,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case WM_CREATE:
 			ViewParam params;
 			params = { 10, 10, 150, 500 };
-			createCombobox("Типы", params, types, sizeof(types) / sizeof(types[0]), cb_list_types_id, hwnd);
+			createCombobox("Типы", params, modes, sizeof(modes) / sizeof(modes), cb_list_types_id, hwnd);
 			params = { 200, 10, 150, 500 };
 			createCombobox("Размер буфера", params, buffNames, sizeof(buffNames) / sizeof(buffNames[0]), cb_list_buffers_id, hwnd);
 			break;
@@ -82,7 +72,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				switch (LOWORD(wParam))
 				{
 				case cb_list_types_id:
-					userConfig.type = types[selectedId];
+					userConfig.type = getModeFromType(modes[selectedId]);
 					break;
 				case cb_list_buffers_id:
 					userConfig.bufferSize = buffSizes[selectedId];
