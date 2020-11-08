@@ -15,7 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source.cpp">
+    <ClCompile Include="GuiMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="banchmark.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
