@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <Windows.h>
 #include <CommCtrl.h>
+#include "benchmark.h"
 
 #define cb_list_disks_id 1
 #define cb_list_buffers_id 2
@@ -12,27 +13,16 @@
 #define btn_pause_id 6
 #define btn_start_id 7
 
-#define KB 1024
-#define MB KB*1024
-#define GB MB*1024
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
-const char* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL", "NO_BUFFERING"};
+const char* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL", "Etc", "NO_BUFFERING"};
 const char* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB" };
 int buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
 const char* disks[] = { "Диск А", "Диск Б" };
 const char* testCounts[] = { "1", "2", "3", "4", "5" };
 
-struct Config {
-	int bufferSize;
-	const char* mode;
-	const char* diskPath;
-};
-
-Config userConfig;
-
 int main() {
+
 	WNDCLASS wcl;
 
 	memset(&wcl, 0, sizeof(WNDCLASS));
@@ -53,6 +43,7 @@ int main() {
 	return 0;
 }
 
+
 void setFont(HWND hwnd, int size, int weight) {
 	HFONT font = CreateFont(size, 0, 0, 0, weight, FALSE, FALSE, FALSE, ANSI_CHARSET,
 		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
@@ -66,7 +57,7 @@ struct ViewParam {
 };
 
 // Функция создания Combobox
-void createCombobox(const char* nameBox, ViewParam* params, const char* values[], int countValues, int id, HWND& hwnd) {
+void createCombobox(const char* nameBox, ViewParam* params, const char* values[], int countValues, DWORD id, HWND& hwnd) {
 	HWND dropList;
 	dropList = CreateWindow("combobox", nameBox, WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 
@@ -76,19 +67,19 @@ void createCombobox(const char* nameBox, ViewParam* params, const char* values[]
 	setFont(dropList, 16, FW_MEDIUM);
 }
 
-void createButton(const char* nameBtn, ViewParam* params, int id, HWND& hwnd) {
+void createButton(const char* nameBtn, ViewParam* params, DWORD id, HWND& hwnd) {
 	HWND btn;
 	btn = CreateWindow("button", nameBtn, WS_VISIBLE | WS_CHILD, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 	setFont(btn, 17, FW_BOLD);
 }
 
-void createText(const char* nameBtn, ViewParam* params, int id, HWND& hwnd, int isBold, int size) {
+void createText(const char* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, int isBold, int size) {
 	HWND stc;
 	stc = CreateWindow("static", nameBtn, WS_VISIBLE | WS_CHILD | SS_CENTER, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 	setFont(stc, size, isBold);
 }
 
-void createProgressBar(ViewParam* params, int id, HWND& hwnd) {
+void createProgressBar(ViewParam* params, DWORD id, HWND& hwnd) {
 	HWND progBar = CreateWindowEx(0, PROGRESS_CLASS, NULL, WS_VISIBLE | WS_CHILD, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 
 	//Установим диапазон 0-2
@@ -101,9 +92,11 @@ void createProgressBar(ViewParam* params, int id, HWND& hwnd) {
 	SendMessage(progBar, PBM_STEPIT, 0, 0);
 }
 
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
-	switch (message) {
+	switch (message)
+	{
 	case WM_CREATE:
 		ViewParam params;
 
@@ -121,8 +114,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		createButton("Стоп", new ViewParam{ 400, 120, 120, 30 }, btn_stop_id, hwnd);
 
 
-		createText("Чтение", new ViewParam{ 50, 60, 100, 20 }, NULL, hwnd, FW_HEAVY, 25);
-		createText("Запись", new ViewParam{ 250, 60, 100, 20 }, NULL, hwnd, FW_HEAVY, 25);
+		createText("Чтение", new ViewParam{ 50, 60, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
+		createText("Запись", new ViewParam{ 250, 60, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
 
 		createText("130 MB/s", new ViewParam{ 50, 100, 100, 20 }, NULL, hwnd, FW_MEDIUM, 18);
 		createText("250 MB/s", new ViewParam{ 250, 100, 100, 20 }, NULL, hwnd, FW_MEDIUM, 18);
@@ -130,21 +123,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		createProgressBar(new ViewParam{ 10, 250, 510, 30 }, NULL, hwnd);
 		break;
 	case WM_COMMAND:
-
 		if (HIWORD(wParam) == CBN_SELCHANGE)
 		{
 			int selectedId = SendMessage(HWND(lParam), CB_GETCURSEL, 0, 0);
 			switch (LOWORD(wParam))
 			{
 			case cb_list_modes_id:
-				userConfig.mode = modes[selectedId];
+				userConfig.mode = getModeFromType(modes[selectedId]);
 				break;
 			case cb_list_buffers_id:
 				userConfig.bufferSize = buffSizes[selectedId];
 				break;
 			}
 		}
-
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
@@ -153,3 +144,5 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
 	return DefWindowProcA(hwnd, message, wParam, lParam);
 }
+
+

@@ -12,36 +12,40 @@
 
 using namespace std;
 
+struct Config {
+    DWORD bufferSize;
+    DWORD mode;
+    const TCHAR* diskPath;
+    DWORD countTests;
+};
+Config userConfig;
+
 const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; //16 по варианту
 const DWORD FILE_SIZE = 250 * MB; //1гб
 
-void writeTest(DWORD);
+void writeTest();
 RESULT writeToFile(HANDLE, DWORD);
 void readTest();
 
-/*
-int __cdecl _tmain(int argc, TCHAR* argv[])
-{
-    DWORD TESTS[] = { FILE_FLAG_WRITE_THROUGH, FILE_FLAG_RANDOM_ACCESS, FILE_FLAG_SEQUENTIAL_SCAN };
 
-    for (int i = 0; i < sizeof(TESTS) / sizeof(DWORD); i++) {
-        _tprintf(TEXT("\n\nTesting %d... \n"), i + 1);
-        writeTest(TESTS[i]);
-    }
-    //readTest();
-    system("Pause");
-}
+//int __cdecl _tmain(int argc, TCHAR* argv[])
+//{
+//    userConfig.bufferSize = 16 * MB;
+//    userConfig.mode = FILE_FLAG_RANDOM_ACCESS;
+//    userConfig.countTests = 5;
+//    writeTest();
+//    //readTest();
+//    system("Pause");
+//} 
 
-void writeTest(DWORD arg) {
-    BOOL bErrorFlag = FALSE;
-
+void writeTest() {
     //создаем файл "test.bin", после закрытия хендла файл будет удален
     HANDLE writeFile = CreateFile(_T("test.bin"),
         GENERIC_WRITE,
         0,
         NULL,
         CREATE_NEW,
-        arg | FILE_FLAG_NO_BUFFERING | FILE_FLAG_DELETE_ON_CLOSE | FILE_FLAG_OVERLAPPED, //FILE_FLAG_DELETE_ON_CLOSE
+        userConfig.mode | FILE_FLAG_NO_BUFFERING | FILE_FLAG_DELETE_ON_CLOSE, //FILE_FLAG_DELETE_ON_CLOSE
         NULL);
 
     //если файл не создался
@@ -51,30 +55,29 @@ void writeTest(DWORD arg) {
     }
 
     DWORD arr_size = sizeof(BUFFER_SIZES) / sizeof(DWORD);
-    RESULT* test_times = new RESULT[arr_size];
+    RESULT* test_times = new RESULT[userConfig.countTests];
+    DOUBLE totalTime = 0, totalmb = 0;
 
-
-    for (DWORD i = 0; i < arr_size; i++)
+    _tprintf(TEXT("Testing with buffer size %d kb ...\n"), userConfig.bufferSize / 1024);
+    for (DWORD i = 0; i < userConfig.countTests; i++)
     {
-        _tprintf(TEXT("Testing with buffer size %d kb.\n"), BUFFER_SIZES[i] / 1024);
-        test_times[i] = writeToFile(writeFile, BUFFER_SIZES[i]);
+        test_times[i] = writeToFile(writeFile, userConfig.bufferSize);
 
         //отслеживаем ошибки
         if (test_times[i].first == NULL)
-        {
             _tprintf(TEXT("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
-        }
-        else
-        {
-            //выводим информацию про результаты тестирования
-            double totalmb = ((test_times[i].first / (double)1024)) / (double)1024;
-            _tprintf(TEXT("Wrote %lf mb successfully.\n"), totalmb);
-            _tprintf(TEXT("Elapsed time = %lf seconds\n"), test_times[i].second);
-            _tprintf(TEXT("Your write speed is %lf mb/sec\n\n"), (double)totalmb / test_times[i].second);
-
-        }
-        Sleep(1000);
+    
+        totalmb += test_times[i].first;
+        totalTime += test_times[i].second;
     }
+
+    //выводим информацию про результаты тестирования
+    totalmb = ((totalmb / (double)1024)) / (double)1024;
+    _tprintf(TEXT("Wrote %lf mb successfully.\n"), totalmb);
+    _tprintf(TEXT("Elapsed time = %lf seconds\n"), totalTime);
+    _tprintf(TEXT("Your write speed is %lf mb/sec\n\n"), (double)totalmb / totalTime);
+
+    Sleep(1000);
     CloseHandle(writeFile);
 }
 
@@ -206,4 +209,15 @@ void readTest() {
 
     CloseHandle(readFile);
 }
-*/
+
+// Преобразование строки в аргумент флага
+int getModeFromType(const char* type) {
+    if (!strcmp(type, "RANDOM_ACCESS"))
+        return FILE_FLAG_RANDOM_ACCESS;
+    else if (!strcmp(type, "WRITE_THROUGH"))
+        return FILE_FLAG_WRITE_THROUGH;
+    else if (!strcmp(type, "SEQUENTIAL"))
+        return FILE_FLAG_SEQUENTIAL_SCAN;
+    else if (!strcmp(type, "NO_BUFFERING"))
+        return FILE_FLAG_NO_BUFFERING;
+}
