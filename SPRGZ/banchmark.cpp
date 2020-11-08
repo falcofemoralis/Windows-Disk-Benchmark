@@ -14,6 +14,7 @@ using namespace std;
 
 struct Config {
     DWORD bufferSize;
+    DWORD fileSize;
     DWORD mode;
     const TCHAR* diskPath;
     DWORD countTests;
@@ -21,7 +22,11 @@ struct Config {
 Config userConfig;
 
 const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; //16 по варианту
+const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
+
+///
 const DWORD FILE_SIZE = 250 * MB; //1гб
+
 
 void writeTest();
 RESULT writeToFile(HANDLE, DWORD);

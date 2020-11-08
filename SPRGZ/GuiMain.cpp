@@ -12,26 +12,30 @@
 #define btn_stop_id 5
 #define btn_pause_id 6
 #define btn_start_id 7
+#define cb_list_files_id 8
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
-const char* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL", "Etc", "NO_BUFFERING"};
+const char* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL", "NO_BUFFERING"};
 const char* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB" };
+const char* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB"};
 int buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
+int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 const char* disks[] = { "Диск А", "Диск Б" };
 const char* testCounts[] = { "1", "2", "3", "4", "5" };
 
 int main() {
-
 	WNDCLASS wcl;
 
 	memset(&wcl, 0, sizeof(WNDCLASS));
 	wcl.lpszClassName = "my window";
 	wcl.lpfnWndProc = WndProc;
+	wcl.hbrBackground = (HBRUSH)(CreateSolidBrush(RGB(255, 255, 255)));
+
 	RegisterClass(&wcl);
 
 	HWND hwnd;
-	hwnd = CreateWindow("my Window", "Disk benchmark", WS_OVERLAPPEDWINDOW, 10, 10, 550, 480, NULL, NULL, NULL, NULL);
+	hwnd = CreateWindow("my Window", "Disk benchmark", WS_SYSMENU | WS_MINIMIZEBOX, 10, 10, 550, 480, NULL, NULL, NULL, NULL);
 
 	ShowWindow(hwnd, SW_SHOWNORMAL);
 
@@ -42,7 +46,6 @@ int main() {
 
 	return 0;
 }
-
 
 void setFont(HWND hwnd, int size, int weight) {
 	HFONT font = CreateFont(size, 0, 0, 0, weight, FALSE, FALSE, FALSE, ANSI_CHARSET,
@@ -92,7 +95,6 @@ void createProgressBar(ViewParam* params, DWORD id, HWND& hwnd) {
 	SendMessage(progBar, PBM_STEPIT, 0, 0);
 }
 
-
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 	switch (message)
@@ -101,18 +103,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		ViewParam params;
 
 		createCombobox("Диски", new ViewParam{ 10, 10, 180, 400 }, disks, sizeof(disks) / sizeof(disks[0]), cb_list_disks_id, hwnd);
-		createCombobox("Кол-во тестов", new ViewParam{ 200, 10, 50, 500 }, testCounts, sizeof(testCounts) / sizeof(testCounts[0]), cb_list_testCounts_id, hwnd);
-		createCombobox("Размер буфера", new ViewParam{ 260, 10, 100, 500 }, buffNames, sizeof(buffNames) / sizeof(buffNames[0]), cb_list_buffers_id, hwnd);
-		createCombobox("Типы", new ViewParam{ 370, 10, 150, 500 }, modes, sizeof(modes) / sizeof(modes[0]), cb_list_modes_id, hwnd);
+		createCombobox("Кол-во тестов", new ViewParam{ 200, 10, 30, 500 }, testCounts, sizeof(testCounts) / sizeof(testCounts[0]), cb_list_testCounts_id, hwnd);
+		createCombobox("Размер буфера", new ViewParam{ 240, 10, 60, 500 }, buffNames, sizeof(buffNames) / sizeof(buffNames[0]), cb_list_buffers_id, hwnd);
+		createCombobox("Размер файла", new ViewParam{ 310, 10, 60, 500 }, fileNames, sizeof(fileNames) / sizeof(fileNames[0]), cb_list_files_id, hwnd);
+		createCombobox("Типы", new ViewParam{ 380, 10, 140, 500 }, modes, sizeof(modes) / sizeof(modes[0]), cb_list_modes_id, hwnd);
 
 		createButton("Старт", new ViewParam{ 400, 40, 120, 30 }, btn_start_id, hwnd);
 		createButton("Пауза", new ViewParam{ 400, 80, 120, 30 }, btn_pause_id, hwnd);
 		createButton("Стоп", new ViewParam{ 400, 120, 120, 30 }, btn_stop_id, hwnd);
-
-		createButton("Старт", new ViewParam{ 400, 40, 120, 30 }, btn_start_id, hwnd);
-		createButton("Пауза", new ViewParam{ 400, 80, 120, 30 }, btn_pause_id, hwnd);
-		createButton("Стоп", new ViewParam{ 400, 120, 120, 30 }, btn_stop_id, hwnd);
-
 
 		createText("Чтение", new ViewParam{ 50, 60, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
 		createText("Запись", new ViewParam{ 250, 60, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
@@ -133,6 +131,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				break;
 			case cb_list_buffers_id:
 				userConfig.bufferSize = buffSizes[selectedId];
+				break;
+			case cb_list_files_id:
+				userConfig.bufferSize = fileSizes[selectedId];
 				break;
 			}
 		}
