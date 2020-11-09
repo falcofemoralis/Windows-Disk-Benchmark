@@ -21,10 +21,26 @@ const char* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 M
 const char* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB"};
 int buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
 int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
-const char* disks[] = { "Диск А", "Диск Б" };
+const char* disks[26];
 const char* testCounts[] = { "1", "2", "3", "4", "5" };
 
 int main() {
+	//определение дисков
+	int n, k = 0;
+	TCHAR dd[4];
+	DWORD dr = GetLogicalDrives();
+
+	for (int i = 0; i < 26; i++)
+	{
+		n = ((dr >> i) & 0x00000001);
+		if (n == 1)
+		{
+			dd[0] = char(65 + i); dd[1] = ':'; dd[2] = '\\'; dd[3] = 0;
+			disks[k] = dd;
+			k++;
+		}
+	}
+
 	WNDCLASS wcl;
 
 	memset(&wcl, 0, sizeof(WNDCLASS));
