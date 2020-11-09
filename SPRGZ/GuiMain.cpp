@@ -30,7 +30,7 @@ int main() {
 	memset(&wcl, 0, sizeof(WNDCLASS));
 	wcl.lpszClassName = "my window";
 	wcl.lpfnWndProc = WndProc;
-	wcl.hbrBackground = (HBRUSH)(CreateSolidBrush(RGB(255, 255, 255)));
+	wcl.hbrBackground = (HBRUSH)(CreateSolidBrush(RGB(243, 243, 243)));
 
 	RegisterClass(&wcl);
 
@@ -58,6 +58,12 @@ struct ViewParam {
 	int x, y;
 	int width, height;
 };
+
+void createBox(const char* nameBtn, ViewParam* params, HWND& hwnd) {
+	HWND box;
+	box = CreateWindow("Button", nameBtn, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, params->x-20, params->y-20, params->width+20, params->height+20, hwnd, NULL, NULL, NULL);
+	setFont(box, 16, FW_MEDIUM);
+}
 
 // Функция создания Combobox
 void createCombobox(const char* nameBox, ViewParam* params, const char* values[], int countValues, DWORD id, HWND& hwnd) {
@@ -95,6 +101,8 @@ void createProgressBar(ViewParam* params, DWORD id, HWND& hwnd) {
 	SendMessage(progBar, PBM_STEPIT, 0, 0);
 }
 
+
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 	switch (message)
@@ -112,8 +120,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		createButton("Пауза", new ViewParam{ 400, 80, 120, 30 }, btn_pause_id, hwnd);
 		createButton("Стоп", new ViewParam{ 400, 120, 120, 30 }, btn_stop_id, hwnd);
 
-		createText("Чтение", new ViewParam{ 50, 60, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
-		createText("Запись", new ViewParam{ 250, 60, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
+		createBox("Результаты теста", new ViewParam{ 30, 60, 360, 180 }, hwnd);
+		createText("Чтение", new ViewParam{ 50, 70, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
+		createText("Запись", new ViewParam{ 250, 70, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
 
 		createText("130 MB/s", new ViewParam{ 50, 100, 100, 20 }, NULL, hwnd, FW_MEDIUM, 18);
 		createText("250 MB/s", new ViewParam{ 250, 100, 100, 20 }, NULL, hwnd, FW_MEDIUM, 18);
