@@ -12,17 +12,18 @@
 
 using namespace std;
 
+// Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
 struct Config {
     DWORD bufferSize;
     DWORD mode;
-    const TCHAR* diskPath;
+    DWORD fileSize;
+    const TCHAR* disk;
     DWORD countTests;
 };
 extern Config userConfig;
 
-void writeTest();
-RESULT writeToFile(HANDLE, DWORD);
-void readTest();
+void writeTest(); // Тест на запись
+void readTest(); // Тест на чтение
 int getModeFromType(const char* type);
 //int getDisks(const char* disks[]);
 
