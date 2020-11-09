@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <strsafe.h>
-#include <utility>   
+#include <utility>
 
 #define KB 1024
 #define MB KB*1024
@@ -228,7 +228,7 @@ int getModeFromType(const char* type) {
 }
 
 // определение дисков
-int getDisks(const char* disks[])
+/*int getDisks(const char* disks[])
 {
     int n, k=0;
     TCHAR dd[4];
@@ -245,4 +245,4 @@ int getDisks(const char* disks[])
         }
     }
     return 0;
-}
+}*/

@@ -25,7 +25,21 @@ const char* disks[26];
 const char* testCounts[] = { "1", "2", "3", "4", "5" };
 
 int main() {
-	getDisks(disks);
+	//определение дисков
+	int n, k = 0;
+	TCHAR dd[4];
+	DWORD dr = GetLogicalDrives();
+
+	for (int i = 0; i < 26; i++)
+	{
+		n = ((dr >> i) & 0x00000001);
+		if (n == 1)
+		{
+			dd[0] = char(65 + i); dd[1] = ':'; dd[2] = '\\'; dd[3] = 0;
+			disks[k] = dd;
+			k++;
+		}
+	}
 
 	WNDCLASS wcl;
 
