@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <strsafe.h>
-#include <utility>   
+#include <utility>
 
 #define KB 1024
 #define MB KB*1024
@@ -226,3 +226,23 @@ int getModeFromType(const char* type) {
     else if (!strcmp(type, "NO_BUFFERING"))
         return FILE_FLAG_NO_BUFFERING;
 }
+
+// определение дисков
+/*int getDisks(const char* disks[])
+{
+    int n, k=0;
+    TCHAR dd[4];
+    DWORD dr = GetLogicalDrives();
+
+    for (int i = 0; i < 26; i++)
+    {
+        n = ((dr >> i) & 0x00000001);
+        if (n == 1)
+        {
+            dd[0] = char(65 + i); dd[1] = ':'; dd[2] = '\\'; dd[3] = 0;
+            disks[k] = dd;
+            k++;
+        }
+    }
+    return 0;
+}*/
