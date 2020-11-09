@@ -21,10 +21,12 @@ const char* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 M
 const char* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB"};
 int buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
 int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
-const char* disks[] = { "Диск А", "Диск Б" };
+const char* disks[26];
 const char* testCounts[] = { "1", "2", "3", "4", "5" };
 
 int main() {
+	getDisks(disks);
+
 	WNDCLASS wcl;
 
 	memset(&wcl, 0, sizeof(WNDCLASS));

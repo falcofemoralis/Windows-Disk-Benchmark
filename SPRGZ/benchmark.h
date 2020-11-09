@@ -24,4 +24,5 @@ void writeTest();
 RESULT writeToFile(HANDLE, DWORD);
 void readTest();
 int getModeFromType(const char* type);
+int getDisks(const char* disks[]);
 
