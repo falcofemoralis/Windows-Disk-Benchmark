@@ -18,11 +18,16 @@
     <ClCompile Include="GuiMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="benchmark.h">
+    <ClCompile Include="benchmarkHeader.h">
       <Filter>Header Files</Filter>
     </ClCompile>
-    <ClCompile Include="banchmark.cpp">
+    <ClCompile Include="benchmark.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GUIMainHeader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <strsafe.h>
 #include <utility>
+#include <CommCtrl.h>
+#include "GUIMainHeader.h"
 
 #define KB 1024
 #define MB KB*1024
@@ -15,7 +17,7 @@ using namespace std;
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
 struct Config {
     DWORD bufferSize;
-    DWORD fileSize;
+    DWORD32 fileSize;
     DWORD mode;
     const TCHAR* disk;
     DWORD countTests;
@@ -24,10 +26,6 @@ Config userConfig;
 
 const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; //16 по варианту
 const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
-
-//Размер диска, ДЛЯ ТЕСТА, необходимо будет удалить
-const DWORD FILE_SIZE = 250 * MB; //1гб
-
 
 void writeTest(); 
 RESULT writeToFile(HANDLE, DWORD);
@@ -52,7 +50,6 @@ void writeTest() {
     TCHAR fullPath[20] = _T("");
     _tcscat_s(fullPath, userConfig.disk);
     _tcscat_s(fullPath, TEXT("test.bin"));
-
 
     //создаем файл "test.bin", после закрытия хендла файл будет удален
     HANDLE writeFile = CreateFile(fullPath,
@@ -87,12 +84,14 @@ void writeTest() {
     }
 
     //выводим информацию про результаты тестирования
-    totalmb = ((totalmb / (double)1024)) / (double)1024; // Перевод в мегабайты
-    _tprintf(TEXT("Wrote %lf mb successfully.\n"), totalmb); 
-    _tprintf(TEXT("Elapsed time = %lf seconds\n"), totalTime);
-    _tprintf(TEXT("Your write speed is %lf mb/sec\n\n"), (double)totalmb / totalTime); // Скорость в MB/S 
+    totalmb = ((totalmb / (DOUBLE)1024)) / (DOUBLE)1024; // Перевод в мегабайты
 
-    Sleep(1000);
+    TCHAR str[20];
+    DOUBLE res = (DOUBLE)totalmb / totalTime;
+    _stprintf_s(str, _T("%.2lf"), res);
+    _tcscat_s(str, TEXT(" МБ\\с"));
+    SetWindowText(text_write, str);
+
     CloseHandle(writeFile);
 }
 
@@ -107,7 +106,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
         DataBuffer[i] = 't';
 
     DOUBLE totalTime = 0;
-    DWORD iterations = FILE_SIZE / buffer_size;
+    DWORD iterations = userConfig.fileSize / buffer_size;
     DWORD dwBytesToWrite = buffer_size * iterations;
     DWORD dwBytesWritten = 0, sumWritten = 0;
 
@@ -137,6 +136,9 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
 
         sumWritten += dwBytesWritten;
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
+
+        //установка прогресса
+        SendMessage(pb_progress, PBM_STEPIT, 0, 0);
     }
 
     if (sumWritten != dwBytesToWrite)
@@ -237,23 +239,3 @@ int getModeFromType(const char* type) {
     else if (!strcmp(type, "NO_BUFFERING"))
         return FILE_FLAG_NO_BUFFERING;
 }
-
-// определение дисков
-/*int getDisks(const char* disks[])
-{
-    int n, k=0;
-    TCHAR dd[4];
-    DWORD dr = GetLogicalDrives();
-
-    for (int i = 0; i < 26; i++)
-    {
-        n = ((dr >> i) & 0x00000001);
-        if (n == 1)
-        {
-            dd[0] = char(65 + i); dd[1] = ':'; dd[2] = '\\'; dd[3] = 0;
-            disks[k] = dd;
-            k++;
-        }
-    }
-    return 0;
-}*/

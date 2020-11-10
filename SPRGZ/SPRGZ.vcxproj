@@ -140,8 +140,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GuiMain.cpp" />
-    <ClCompile Include="banchmark.cpp" />
-    <ClCompile Include="benchmark.h" />
+    <ClCompile Include="benchmark.cpp" />
+    <ClCompile Include="benchmarkHeader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GUIMainHeader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <strsafe.h>
 #include <utility>   
+#include <CommCtrl.h>
 
 #define KB 1024
 #define MB KB*1024
@@ -16,7 +17,7 @@ using namespace std;
 struct Config {
     DWORD bufferSize;
     DWORD mode;
-    DWORD fileSize;
+    DWORD32 fileSize;
     const TCHAR* disk;
     DWORD countTests;
 };
@@ -25,5 +26,4 @@ extern Config userConfig;
 void writeTest(); // Тест на запись
 void readTest(); // Тест на чтение
 int getModeFromType(const char* type);
-//int getDisks(const char* disks[]);
 
