@@ -28,8 +28,9 @@ const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8
 const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 
 DWORD WINAPI writeTest(LPVOID param);
-RESULT writeToFile(HANDLE, DWORD);
+RESULT writeToFile(HANDLE, DWORD, DWORD);
 void readTest();
+void ExitTestThread(HANDLE& writeFile);
 
 // ДЛЯ ТЕСТА, если необходимо что то затестить без UI, снимаете комменты с этого мейна и комментите в GUI
 
@@ -57,13 +58,14 @@ DWORD WINAPI writeTest(LPVOID param) {
         GENERIC_WRITE,
         0,
         NULL,
-        CREATE_NEW,
+        CREATE_ALWAYS,
         userConfig.mode | FILE_FLAG_NO_BUFFERING | FILE_FLAG_DELETE_ON_CLOSE, //FILE_FLAG_DELETE_ON_CLOSE
         NULL);
 
     //если файл не создался
     if (writeFile == INVALID_HANDLE_VALUE) {
         _tprintf(TEXT("Terminal failure: Unable to create file for write with error code %d.\n"), GetLastError());
+        ExitTestThread(writeFile);
         return NULL;
     }
 
@@ -73,12 +75,14 @@ DWORD WINAPI writeTest(LPVOID param) {
     for (DWORD i = 0; i < userConfig.countTests; i++)
     {
         // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
-        RESULT test = writeToFile(writeFile, userConfig.bufferSize);
+        RESULT test = writeToFile(writeFile, userConfig.bufferSize, i);
 
         //отслеживаем ошибки
-        if (test.first == NULL)
+        if (test.first == NULL) {
+            ExitTestThread(writeFile);
             _tprintf(TEXT("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
-    
+        }
+
         // Подсчет суммарного количества записаных байт и затраченого времени
         totalmb += test.first;
         totalTime += test.second;
@@ -91,13 +95,14 @@ DWORD WINAPI writeTest(LPVOID param) {
     DOUBLE res = (DOUBLE)totalmb / totalTime;
     _stprintf_s(str, _T("%.2lf"), res);
     _tcscat_s(str, TEXT(" МБ\\с"));
+    Sleep(800);
     SetWindowText(text_write, str);
 
-    CloseHandle(writeFile);
+    ExitTestThread(writeFile);
     puts("Ended");
 }
 
-RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
+RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
     LARGE_INTEGER Frequency;
     BOOL bErrorFlag;
@@ -115,9 +120,16 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
     //начинаем отсчет времени
     QueryPerformanceFrequency(&Frequency);
 
+    // Для отображение прогресса на прогресс баре
+    DWORD curProgress = (iterations * iter * 100);
+    DWORD allSteps = iterations * userConfig.countTests;
+
     //записываем в файл count раз массива данных
     for (int i = 0; i < iterations; ++i)
     {
+        if (threadIsCanceled == TRUE)
+            ExitTestThread(writeFile);
+        
         puts("Working");
         QueryPerformanceCounter(&StartingTime);
 
@@ -141,7 +153,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
 
         //установка прогресса
-        SendMessage(pb_progress, PBM_STEPIT, 0, 0);
+        SendMessage(pb_progress, PBM_SETPOS, ((100 * (i + 1) + curProgress) / allSteps), 0);
     }
 
     if (sumWritten != dwBytesToWrite)
@@ -150,6 +162,13 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
         return make_pair(NULL, NULL);
     }
     return make_pair(sumWritten, totalTime);
+}
+
+void ExitTestThread(HANDLE& writeFile) {
+    SendMessage(pb_progress, PBM_SETPOS, 0, 0);
+    CloseHandle(writeFile);
+    threadIsCanceled = TRUE;
+    ExitThread(0);
 }
 
 // TODO

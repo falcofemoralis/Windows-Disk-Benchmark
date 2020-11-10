@@ -39,6 +39,7 @@ HWND btn_stop, btn_pause, btn_start, cb_list_files, cb_list_disks, cb_list_buffe
 
 DWORD mainThreadId; // ID основного потока
 HANDLE testThread;
+BOOL threadIsCanceled = TRUE;
 
 // Инициализация всех необходимых первоначальных данных
 void init();
@@ -101,11 +102,6 @@ void init() {
 	userConfig.disk = "C:\\";
 	userConfig.fileSize = fileSizes[0];
 	userConfig.mode = getModeFromType(modes[0]);
-	
-	// Определение потока для тестирования
-	mainThreadId = GetCurrentThreadId();
-	testThread = CreateThread(NULL, 0, writeTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
-	//ResumeThread(testThread);
 }
 
 /////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
@@ -216,22 +212,28 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
 			DWORD counts = userConfig.countTests * (userConfig.fileSize / userConfig.bufferSize);
 			//Установим диапазон 0-countTests
-			SendMessage(pb_progress, PBM_SETRANGE, 0, (LPARAM)MAKELONG(0, counts));
+			SendMessage(pb_progress, PBM_SETRANGE, 0, (LPARAM)MAKELONG(0, 100));
 		}
 
+		// Управление потом тестирования (самим тестом)
 		if (HWND(lParam) == btn_start) {
 			puts("Resume");
+			if (threadIsCanceled == TRUE)
+				testThread = CreateThread(NULL, 0, writeTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
+			threadIsCanceled = FALSE;
 			ResumeThread(testThread);
 		}
 
 		if (HWND(lParam) == btn_pause) {
+			Sleep(50);
 			SuspendThread(testThread);
 			puts("paused");
 		}
 
 		if (HWND(lParam) == btn_stop) {
-			ExitThread(GetThreadId(testThread));
-			puts("paused");
+			threadIsCanceled = TRUE; 
+			ResumeThread(testThread); // Завершаем поток естественным образом
+			puts("stoped");
 		}
 
 
