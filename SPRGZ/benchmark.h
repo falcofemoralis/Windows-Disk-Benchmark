@@ -23,7 +23,7 @@ struct Config {
 };
 extern Config userConfig;
 
-void writeTest(); // Тест на запись
+DWORD WINAPI writeTest(LPVOID param); // Тест на запись
 void readTest(); // Тест на чтение
 int getModeFromType(const char* type);
 

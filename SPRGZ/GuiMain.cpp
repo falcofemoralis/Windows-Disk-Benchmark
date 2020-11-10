@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <Windows.h>
 #include <CommCtrl.h>
-#include "benchmarkHeader.h"
+#include "benchmark.h"
 
 #define ID_BTN 20
 #define ID_CB 30
@@ -34,8 +34,13 @@ const TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
 DWORD fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 
+// Элемент интерфейса
 HWND btn_stop, btn_pause, btn_start, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, cb_list_modes, text_read, text_write, pb_progress;
 
+DWORD mainThreadId; // ID основного потока
+HANDLE testThread;
+
+// Инициализация всех необходимых первоначальных данных
 void init();
 
 int main() {
@@ -90,11 +95,17 @@ void init() {
 	//определение дисков
 	getDisks();
 
+	// Инциализация первоначального состояния юзер конфига
 	userConfig.bufferSize = buffSizes[0];
 	userConfig.countTests = 1;
-	userConfig.disk = disks[0];
+	userConfig.disk = "C:\\";
 	userConfig.fileSize = fileSizes[0];
 	userConfig.mode = getModeFromType(modes[0]);
+	
+	// Определение потока для тестирования
+	mainThreadId = GetCurrentThreadId();
+	testThread = CreateThread(NULL, 0, writeTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
+	//ResumeThread(testThread);
 }
 
 /////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
@@ -209,9 +220,21 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		}
 
 		if (HWND(lParam) == btn_start) {
-			writeTest();
+			puts("Resume");
+			ResumeThread(testThread);
 		}
-	
+
+		if (HWND(lParam) == btn_pause) {
+			SuspendThread(testThread);
+			puts("paused");
+		}
+
+		if (HWND(lParam) == btn_stop) {
+			ExitThread(GetThreadId(testThread));
+			puts("paused");
+		}
+
+
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0); // Закрытие приложени

@@ -5,7 +5,7 @@
 #include <strsafe.h>
 #include <utility>
 #include <CommCtrl.h>
-#include "GUIMainHeader.h"
+#include "GUIMain.h"
 
 #define KB 1024
 #define MB KB*1024
@@ -27,7 +27,7 @@ Config userConfig;
 const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; //16 по варианту
 const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 
-void writeTest(); 
+DWORD WINAPI writeTest(LPVOID param);
 RESULT writeToFile(HANDLE, DWORD);
 void readTest();
 
@@ -44,8 +44,9 @@ void readTest();
 //    system("Pause");
 //} 
 
-void writeTest() {
+DWORD WINAPI writeTest(LPVOID param) {
 
+    puts("Started");
     // Определение полного пути к файлу
     TCHAR fullPath[20] = _T("");
     _tcscat_s(fullPath, userConfig.disk);
@@ -63,7 +64,7 @@ void writeTest() {
     //если файл не создался
     if (writeFile == INVALID_HANDLE_VALUE) {
         _tprintf(TEXT("Terminal failure: Unable to create file for write with error code %d.\n"), GetLastError());
-        return;
+        return NULL;
     }
 
     DOUBLE totalTime = 0, totalmb = 0;
@@ -93,6 +94,7 @@ void writeTest() {
     SetWindowText(text_write, str);
 
     CloseHandle(writeFile);
+    puts("Ended");
 }
 
 RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
@@ -116,6 +118,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
     //записываем в файл count раз массива данных
     for (int i = 0; i < iterations; ++i)
     {
+        puts("Working");
         QueryPerformanceCounter(&StartingTime);
 
         bErrorFlag = WriteFile(
