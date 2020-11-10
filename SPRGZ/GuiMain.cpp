@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <Windows.h>
 #include <CommCtrl.h>
-#include "benchmarkHeader.h"
+#include "benchmark.h"
 
 #define ID_BTN 20
 #define ID_CB 30
@@ -37,6 +37,11 @@ DWORD fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 HWND btn_stop, btn_pause, btn_start, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, text_read, text_write, pb_progress;
 HWND *rb_group_modes;
 
+DWORD mainThreadId; // ID основного потока
+HANDLE testThread;
+BOOL threadIsCanceled = TRUE;
+
+// »нициализаци€ всех необходимых первоначальных данных
 void init();
 
 int main() {
@@ -91,9 +96,10 @@ void init() {
 	//определение дисков
 	getDisks();
 
+	// »нциализаци€ первоначального состо€ни€ юзер конфига
 	userConfig.bufferSize = buffSizes[0];
 	userConfig.countTests = 1;
-	userConfig.disk = disks[0];
+	userConfig.disk = disks[0];;
 	userConfig.fileSize = fileSizes[0];
 	userConfig.mode = getModeFromType(modes[0]);
 }
@@ -227,7 +233,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			}
 		}
 
-		//нажата одна из radio button
+    	//нажата одна из radio button
 		if (HIWORD(wParam) == BN_CLICKED) {
 			for (DWORD i = 0; i < sizeof(modes) / sizeof(modes[0]); ++i)
 				if (HWND(lParam) == rb_group_modes[i]) {
@@ -235,11 +241,30 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				}	
 		}
 
+		// ”правление потом тестировани€ (самим тестом)
 		if (HWND(lParam) == btn_start) {
+			puts("Resume");
 			EnableWindow(btn_start, false);
-			writeTest();
+			if (threadIsCanceled == TRUE)
+				testThread = CreateThread(NULL, 0, writeTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
+			threadIsCanceled = FALSE;
+			ResumeThread(testThread);
 		}
-	
+
+		if (HWND(lParam) == btn_pause) {
+			Sleep(50);
+			SuspendThread(testThread);
+			puts("paused");
+		}
+
+		if (HWND(lParam) == btn_stop) {
+			EnableWindow(btn_start, true);
+			threadIsCanceled = TRUE; 
+			ResumeThread(testThread); // «авершаем поток естественным образом
+			puts("stoped");
+		}
+
+
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0); // «акрытие приложени
