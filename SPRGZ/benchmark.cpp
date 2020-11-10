@@ -68,7 +68,12 @@ void writeTest() {
 
     DOUBLE totalTime = 0, totalmb = 0;
 
-    _tprintf(TEXT("Testing with buffer size %d kb ...\n"), userConfig.bufferSize / 1024);
+    _tprintf(TEXT("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d"),
+        fullPath,
+        userConfig.bufferSize / 1024,
+        userConfig.fileSize / 1024, 
+        userConfig.mode ,
+        userConfig.countTests);
     for (DWORD i = 0; i < userConfig.countTests; i++)
     {
         // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
@@ -109,6 +114,8 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
     DWORD iterations = userConfig.fileSize / buffer_size;
     DWORD dwBytesToWrite = buffer_size * iterations;
     DWORD dwBytesWritten = 0, sumWritten = 0;
+
+    SendMessage(pb_progress, PBM_SETRANGE, 0, (LPARAM)MAKELONG(0, iterations * userConfig.countTests));
 
     //начинаем отсчет времени
     QueryPerformanceFrequency(&Frequency);
@@ -206,8 +213,6 @@ void readTest() {
 
         sumRead += dwBytesRead;
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
-
-        Sleep(1000);
     }
 
     //отслеживаем ошибки

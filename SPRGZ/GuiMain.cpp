@@ -34,7 +34,8 @@ const TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
 DWORD fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 
-HWND btn_stop, btn_pause, btn_start, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, cb_list_modes, text_read, text_write, pb_progress;
+HWND btn_stop, btn_pause, btn_start, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, text_read, text_write, pb_progress;
+HWND *rb_group_modes;
 
 void init();
 
@@ -51,7 +52,7 @@ int main() {
 	wcl.hbrBackground = (HBRUSH)(CreateSolidBrush(RGB(243, 243, 243)));
 	RegisterClass(&wcl);
 
-	HWND mainWindow = CreateWindow("my Window", "Disk benchmark", WS_SYSMENU | WS_MINIMIZEBOX, 10, 10, 550, 480, NULL, NULL, NULL, NULL);
+	HWND mainWindow = CreateWindow("my Window", "Disk benchmark", WS_SYSMENU | WS_MINIMIZEBOX, 10, 10, 450, 400, NULL, NULL, NULL, NULL);
 	ShowWindow(mainWindow, SW_SHOWNORMAL);
 
 	// Принимает сообщения, а так же не дает программе завершится
@@ -102,21 +103,20 @@ void init() {
 
 // Структура с параметрами view объектов: x,y - координаты объекта, width,height - размеры view
 struct ViewParam {
-	int x, y;
-	int width, height;
+	DWORD x, y;
+	DWORD width, height;
 };
 
-void createBox(const char* nameBtn, ViewParam* params, HWND& hwnd) {
+void createBox(const char* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr) {
 	HWND box;
-	box = CreateWindow("Button", nameBtn, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, params->x-20, params->y-20, params->width+20, params->height+20, hwnd, NULL, NULL, NULL);
+	box = CreateWindow("Button", nameBtn, WS_CHILD | WS_VISIBLE | BS_GROUPBOX | atr, params->x-20, params->y-20, params->width+20, params->height+20, hwnd, NULL, NULL, NULL);
 	setFont(box, 16, FW_MEDIUM);
 }
 
-HWND createCombobox(const char* nameBox, ViewParam* params, const TCHAR* values[], int countValues, DWORD id, HWND& hwnd) {
+HWND createCombobox(const char* nameBox, ViewParam* params, const TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd) {
 	HWND dropList;
 	dropList = CreateWindow("combobox", nameBox, WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
-
-	for (int i = 0; i < countValues; ++i)
+	for (DWORD i = 0; i < countValues; ++i)
 		SendMessage(dropList, CB_ADDSTRING, 0, LPARAM(values[i]));
 	SendMessage(dropList, CB_SETCURSEL, 0, 0);
 	setFont(dropList, 16, FW_MEDIUM);
@@ -130,9 +130,9 @@ HWND createButton(const char* nameBtn, ViewParam* params, DWORD id, HWND& hwnd) 
 	return btn;
 }
 
-HWND createText(const char* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, int isBold, int size) {
+HWND createText(const char* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, DWORD isBold, DWORD size) {
 	HWND st;
-	st = CreateWindow("static", nameBtn, WS_VISIBLE | WS_CHILD | SS_CENTER, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
+	st = CreateWindow("static", nameBtn, WS_VISIBLE | WS_CHILD | SS_CENTER | BS_VCENTER, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 	setFont(st, size, isBold);
 	return st;
 }
@@ -140,14 +140,26 @@ HWND createText(const char* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, in
 HWND createProgressBar(ViewParam* params, DWORD id, HWND& hwnd) {
 	HWND pb = CreateWindowEx(0, PROGRESS_CLASS, NULL, WS_VISIBLE | WS_CHILD, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 
-	//маскимальный прогресс
-	SendMessage(pb, PBM_SETRANGE, 0, (LPARAM)MAKELONG(0, userConfig.countTests * (userConfig.fileSize / userConfig.bufferSize)));
-
 	//Установим шаг в 1
 	SendMessage(pb, PBM_SETSTEP, (WPARAM)1, 0);
 
 	return pb;
 }
+
+HWND* createRadiobtnGroup(const char* nameBtn, ViewParam* params, const TCHAR* values[], DWORD countValues,  DWORD id, HWND& hwnd) {
+	HWND *btns = new HWND[countValues];
+	DWORD y = params->y;
+	for (DWORD i = 0; i < countValues; ++i) {
+		btns[i] = CreateWindow("button", modes[i], WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON, params->x, y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
+		setFont(btns[i], 15, FW_MEDIUM);
+		y += 20;
+	}
+
+	SendMessage(btns[0], BM_SETCHECK, BST_CHECKED, 0);
+
+	return btns;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -157,40 +169,51 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	{
 
 	case WM_CREATE: {
+		// Создание графических элементов
+
 		ViewParam params;
 
-		// Создание графических элементов
-		cb_list_disks = createCombobox("Диски", new ViewParam{ 10, 10, 180, 400 }, disks, sizeof(disks) / sizeof(disks[0]), cb_list_disks_id, hwnd);
-		cb_list_testCounts = createCombobox("Кол-во тестов", new ViewParam{ 200, 10, 30, 500 }, testCounts, sizeof(testCounts) / sizeof(testCounts[0]), cb_list_testCounts_id, hwnd);
-		cb_list_buffers = createCombobox("Размер буфера", new ViewParam{ 240, 10, 60, 500 }, buffNames, sizeof(buffNames) / sizeof(buffNames[0]), cb_list_buffers_id, hwnd);
-		cb_list_files = createCombobox("Размер файла", new ViewParam{ 310, 10, 60, 500 }, fileNames, sizeof(fileNames) / sizeof(fileNames[0]), cb_list_files_id, hwnd);
-		cb_list_modes = createCombobox("Типы", new ViewParam{ 380, 10, 140, 500 }, modes, sizeof(modes) / sizeof(modes[0]), cb_list_modes_id, hwnd);
+		//Диски
+		createText("Drive to test:", new ViewParam{ 10, 13, 90, 30 }, NULL, hwnd, FW_MEDIUM, 18);
+		cb_list_disks = createCombobox("Диски", new ViewParam{ 110, 10, 310, 400 }, disks, sizeof(disks) / sizeof(disks[0]), cb_list_disks_id, hwnd);
 
-		btn_start = createButton("Старт", new ViewParam{ 400, 40, 120, 30 }, btn_start_id, hwnd);
-		btn_pause = createButton("Пауза", new ViewParam{ 400, 80, 120, 30 }, btn_pause_id, hwnd);
-		btn_stop = createButton("Стоп", new ViewParam{ 400, 120, 120, 30 }, btn_stop_id, hwnd);
+		//Ряд настроек размеров
+		createBox("File size", new ViewParam{ 30, 60, 80, 40 }, hwnd, NULL);
+		cb_list_files = createCombobox("Размер файла", new ViewParam{ 20, 60, 80, 500 }, fileNames, sizeof(fileNames) / sizeof(fileNames[0]), cb_list_files_id, hwnd);
 
-		createBox("Результаты теста", new ViewParam{ 30, 60, 360, 180 }, hwnd); // Визаулизация рамки
+		createBox("Buffer size", new ViewParam{ 190, 60, 80, 40 }, hwnd, NULL); 
+		cb_list_buffers = createCombobox("Размер буфера", new ViewParam{ 180, 60, 80, 500 }, buffNames, sizeof(buffNames) / sizeof(buffNames[0]), cb_list_buffers_id, hwnd);
 
-		createText("Чтение", new ViewParam{ 50, 70, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
-		createText("Запись", new ViewParam{ 250, 70, 100, 20 }, NULL, hwnd, FW_HEAVY, 20);
-		text_read = createText("0 MB\\c", new ViewParam{ 50, 100, 100, 20 }, text_read_id, hwnd, FW_MEDIUM, 18);
-		text_write =  createText("0 MB\\c", new ViewParam{ 250, 100, 100, 20 }, text_write_id, hwnd, FW_MEDIUM, 18);
+		createBox("Passes", new ViewParam{ 340, 60, 80, 40 }, hwnd, NULL);
+		cb_list_testCounts = createCombobox("Кол-во тестов", new ViewParam{ 330, 60, 80, 500 }, testCounts, sizeof(testCounts) / sizeof(testCounts[0]), cb_list_testCounts_id, hwnd);
+	
+		//Блок результатов
+		createBox("Test results", new ViewParam{ 30, 130, 240, 120 }, hwnd, BS_CENTER);
+		createBox("Write", new ViewParam{ 40, 150, 95, 90 }, hwnd, BS_CENTER);
+		text_write = createText("0 MB\\c", new ViewParam{ 25, 180, 105, 20 }, text_write_id, hwnd, FW_MEDIUM, 16);
+		createBox("Read", new ViewParam{ 165, 150, 95, 90 }, hwnd, BS_CENTER);
+		text_read = createText("0 MB\\c", new ViewParam{ 155, 180, 100, 20 }, text_read_id, hwnd, FW_MEDIUM, 16);
 
-		pb_progress = createProgressBar(new ViewParam{ 10, 250, 510, 30 }, NULL, hwnd);
+		//Блок режимов
+		createBox("Modes", new ViewParam{ 300, 130, 120, 120 }, hwnd, BS_CENTER);
+		rb_group_modes = createRadiobtnGroup("Modes buttons", new ViewParam{ 285, 140, 125, 20 }, modes, sizeof(modes) / sizeof(modes[0]), NULL, hwnd);
+
+		//кнопки управления
+		btn_start = createButton("Start", new ViewParam{ 10, 260, 120, 30 }, btn_start_id, hwnd);
+		btn_pause = createButton("Pause", new ViewParam{ 160, 260, 120, 30 }, btn_pause_id, hwnd);
+		btn_stop = createButton("Stop", new ViewParam{ 300, 260, 120, 30 }, btn_stop_id, hwnd);
+
+		//прогресс бар
+		pb_progress = createProgressBar(new ViewParam{ 10, 300, 410, 30 }, NULL, hwnd);
 		break;
 	}
 	case WM_COMMAND:
 		// Если wParam = CBN_SELCHANGE, значит было выбрано одно из полей выпадающего списка
-
 		if (HIWORD(wParam) == CBN_SELCHANGE) {
 			int selectedId;
 			selectedId = SendMessage(HWND(lParam), CB_GETCURSEL, 0, 0); // Индекс поля выпадающего списка
 
-			if (HWND(lParam) == cb_list_modes) {
-				userConfig.mode = getModeFromType(modes[selectedId]);
-			}
-			else if (HWND(lParam) == cb_list_buffers) {
+			if (HWND(lParam) == cb_list_buffers) {
 				userConfig.bufferSize = buffSizes[selectedId];
 			}
 			else if (HWND(lParam) == cb_list_files) {
@@ -202,13 +225,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			else if (HWND(lParam) == cb_list_testCounts) {
 				userConfig.countTests = selectedId + 1;
 			}
+		}
 
-			DWORD counts = userConfig.countTests * (userConfig.fileSize / userConfig.bufferSize);
-			//Установим диапазон 0-countTests
-			SendMessage(pb_progress, PBM_SETRANGE, 0, (LPARAM)MAKELONG(0, counts));
+		//нажата одна из radio button
+		if (HIWORD(wParam) == BN_CLICKED) {
+			for (DWORD i = 0; i < sizeof(modes) / sizeof(modes[0]); ++i)
+				if (HWND(lParam) == rb_group_modes[i]) {
+					userConfig.mode = getModeFromType(modes[i]);
+				}	
 		}
 
 		if (HWND(lParam) == btn_start) {
+			EnableWindow(btn_start, false);
 			writeTest();
 		}
 	
