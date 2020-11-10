@@ -12,11 +12,12 @@
 
 using namespace std;
 
+// Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
 struct Config {
     DWORD bufferSize;
     DWORD fileSize;
     DWORD mode;
-    const TCHAR* diskPath;
+    const TCHAR* disk;
     DWORD countTests;
 };
 Config userConfig;
@@ -24,28 +25,37 @@ Config userConfig;
 const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; //16 по варианту
 const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 
-///
+//Размер диска, ДЛЯ ТЕСТА, необходимо будет удалить
 const DWORD FILE_SIZE = 250 * MB; //1гб
 
 
-void writeTest();
+void writeTest(); 
 RESULT writeToFile(HANDLE, DWORD);
 void readTest();
 
+// ДЛЯ ТЕСТА, если необходимо что то затестить без UI, снимаете комменты с этого мейна и комментите в GUI
 
 //int __cdecl _tmain(int argc, TCHAR* argv[])
 //{
 //    userConfig.bufferSize = 16 * MB;
 //    userConfig.mode = FILE_FLAG_RANDOM_ACCESS;
 //    userConfig.countTests = 5;
+//    userConfig.disk = "C:\\";
 //    writeTest();
 //    //readTest();
 //    system("Pause");
 //} 
 
 void writeTest() {
+
+    // Определение полного пути к файлу
+    TCHAR fullPath[20] = _T("");
+    _tcscat_s(fullPath, userConfig.disk);
+    _tcscat_s(fullPath, TEXT("test.bin"));
+
+
     //создаем файл "test.bin", после закрытия хендла файл будет удален
-    HANDLE writeFile = CreateFile(_T("test.bin"),
+    HANDLE writeFile = CreateFile(fullPath,
         GENERIC_WRITE,
         0,
         NULL,
@@ -59,28 +69,28 @@ void writeTest() {
         return;
     }
 
-    DWORD arr_size = sizeof(BUFFER_SIZES) / sizeof(DWORD);
-    RESULT* test_times = new RESULT[userConfig.countTests];
     DOUBLE totalTime = 0, totalmb = 0;
 
     _tprintf(TEXT("Testing with buffer size %d kb ...\n"), userConfig.bufferSize / 1024);
     for (DWORD i = 0; i < userConfig.countTests; i++)
     {
-        test_times[i] = writeToFile(writeFile, userConfig.bufferSize);
+        // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
+        RESULT test = writeToFile(writeFile, userConfig.bufferSize);
 
         //отслеживаем ошибки
-        if (test_times[i].first == NULL)
+        if (test.first == NULL)
             _tprintf(TEXT("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
     
-        totalmb += test_times[i].first;
-        totalTime += test_times[i].second;
+        // Подсчет суммарного количества записаных байт и затраченого времени
+        totalmb += test.first;
+        totalTime += test.second;
     }
 
     //выводим информацию про результаты тестирования
-    totalmb = ((totalmb / (double)1024)) / (double)1024;
-    _tprintf(TEXT("Wrote %lf mb successfully.\n"), totalmb);
+    totalmb = ((totalmb / (double)1024)) / (double)1024; // Перевод в мегабайты
+    _tprintf(TEXT("Wrote %lf mb successfully.\n"), totalmb); 
     _tprintf(TEXT("Elapsed time = %lf seconds\n"), totalTime);
-    _tprintf(TEXT("Your write speed is %lf mb/sec\n\n"), (double)totalmb / totalTime);
+    _tprintf(TEXT("Your write speed is %lf mb/sec\n\n"), (double)totalmb / totalTime); // Скорость в MB/S 
 
     Sleep(1000);
     CloseHandle(writeFile);
@@ -137,6 +147,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
     return make_pair(sumWritten, totalTime);
 }
 
+// TODO
 void readTest() {
     //  writeTest(NULL);
 
@@ -215,7 +226,7 @@ void readTest() {
     CloseHandle(readFile);
 }
 
-// Преобразование строки в аргумент флага
+// Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
 int getModeFromType(const char* type) {
     if (!strcmp(type, "RANDOM_ACCESS"))
         return FILE_FLAG_RANDOM_ACCESS;
