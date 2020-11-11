@@ -3,7 +3,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <strsafe.h>
-#include <utility>   
+#include <utility>
+#include <CommCtrl.h>
+#include "GUIMain.h"
 
 #define KB 1024
 #define MB KB*1024
@@ -12,11 +14,12 @@
 
 using namespace std;
 
+// Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
 struct Config {
     DWORD bufferSize;
-    DWORD fileSize;
     DWORD mode;
-    const TCHAR* diskPath;
+    DWORD fileSize;
+    const TCHAR* disk;
     DWORD countTests;
 };
 Config userConfig;
@@ -24,69 +27,87 @@ Config userConfig;
 const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; //16 по варианту
 const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 
-///
-const DWORD FILE_SIZE = 250 * MB; //1гб
-
-
-void writeTest();
-RESULT writeToFile(HANDLE, DWORD);
+DWORD WINAPI writeTest(LPVOID param);
+RESULT writeToFile(HANDLE, DWORD, DWORD);
 void readTest();
+void ExitTestThread(HANDLE& writeFile);
 
+// ДЛЯ ТЕСТА, если необходимо что то затестить без UI, снимаете комменты с этого мейна и комментите в GUI
 
 //int __cdecl _tmain(int argc, TCHAR* argv[])
 //{
 //    userConfig.bufferSize = 16 * MB;
 //    userConfig.mode = FILE_FLAG_RANDOM_ACCESS;
 //    userConfig.countTests = 5;
+//    userConfig.disk = "C:\\";
 //    writeTest();
 //    //readTest();
 //    system("Pause");
 //} 
 
-void writeTest() {
+DWORD WINAPI writeTest(LPVOID param) {
+
+    puts("Started");
+    // Определение полного пути к файлу
+    TCHAR fullPath[20] = _T("");
+    _tcscat_s(fullPath, userConfig.disk);
+    _tcscat_s(fullPath, TEXT("test.bin"));
+
     //создаем файл "test.bin", после закрытия хендла файл будет удален
-    HANDLE writeFile = CreateFile(_T("test.bin"),
+    HANDLE writeFile = CreateFile(fullPath,
         GENERIC_WRITE,
         0,
         NULL,
-        CREATE_NEW,
+        CREATE_ALWAYS,
         userConfig.mode | FILE_FLAG_NO_BUFFERING | FILE_FLAG_DELETE_ON_CLOSE, //FILE_FLAG_DELETE_ON_CLOSE
         NULL);
 
     //если файл не создался
     if (writeFile == INVALID_HANDLE_VALUE) {
         _tprintf(TEXT("Terminal failure: Unable to create file for write with error code %d.\n"), GetLastError());
-        return;
+        ExitTestThread(writeFile);
+        return NULL;
     }
 
-    DWORD arr_size = sizeof(BUFFER_SIZES) / sizeof(DWORD);
-    RESULT* test_times = new RESULT[userConfig.countTests];
     DOUBLE totalTime = 0, totalmb = 0;
 
-    _tprintf(TEXT("Testing with buffer size %d kb ...\n"), userConfig.bufferSize / 1024);
+    _tprintf(TEXT("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d"),
+        fullPath,
+        userConfig.bufferSize / 1024,
+        userConfig.fileSize / 1024, 
+        userConfig.mode ,
+        userConfig.countTests);
     for (DWORD i = 0; i < userConfig.countTests; i++)
     {
-        test_times[i] = writeToFile(writeFile, userConfig.bufferSize);
+        // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
+        RESULT test = writeToFile(writeFile, userConfig.bufferSize, i);
 
         //отслеживаем ошибки
-        if (test_times[i].first == NULL)
+        if (test.first == NULL) {
+            ExitTestThread(writeFile);
             _tprintf(TEXT("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
-    
-        totalmb += test_times[i].first;
-        totalTime += test_times[i].second;
+        }
+
+        // Подсчет суммарного количества записаных байт и затраченого времени
+        totalmb += test.first;
+        totalTime += test.second;
     }
 
     //выводим информацию про результаты тестирования
-    totalmb = ((totalmb / (double)1024)) / (double)1024;
-    _tprintf(TEXT("Wrote %lf mb successfully.\n"), totalmb);
-    _tprintf(TEXT("Elapsed time = %lf seconds\n"), totalTime);
-    _tprintf(TEXT("Your write speed is %lf mb/sec\n\n"), (double)totalmb / totalTime);
+    totalmb = ((totalmb / (DOUBLE)1024)) / (DOUBLE)1024; // Перевод в мегабайты
 
-    Sleep(1000);
-    CloseHandle(writeFile);
+    TCHAR str[20];
+    DOUBLE res = (DOUBLE)totalmb / totalTime;
+    _stprintf_s(str, _T("%.2lf"), res);
+    _tcscat_s(str, TEXT(" МБ\\с"));
+    Sleep(800);
+    SetWindowText(text_write, str);
+
+    ExitTestThread(writeFile);
+    puts("Ended");
 }
 
-RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
+RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
     LARGE_INTEGER Frequency;
     BOOL bErrorFlag;
@@ -97,16 +118,24 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
         DataBuffer[i] = 't';
 
     DOUBLE totalTime = 0;
-    DWORD iterations = FILE_SIZE / buffer_size;
+    DWORD iterations = userConfig.fileSize / buffer_size;
     DWORD dwBytesToWrite = buffer_size * iterations;
     DWORD dwBytesWritten = 0, sumWritten = 0;
 
     //начинаем отсчет времени
     QueryPerformanceFrequency(&Frequency);
 
+    // Для отображение прогресса на прогресс баре
+    DWORD curProgress = (iterations * iter * 100);
+    DWORD allSteps = iterations * userConfig.countTests;
+
     //записываем в файл count раз массива данных
     for (int i = 0; i < iterations; ++i)
     {
+        if (threadStatus == CANCELED)
+            ExitTestThread(writeFile);
+        
+        puts("Working");
         QueryPerformanceCounter(&StartingTime);
 
         bErrorFlag = WriteFile(
@@ -127,6 +156,9 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
 
         sumWritten += dwBytesWritten;
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
+
+        //установка прогресса
+        SendMessage(pb_progress, PBM_SETPOS, ((100 * (i + 1) + curProgress) / allSteps), 0);
     }
 
     if (sumWritten != dwBytesToWrite)
@@ -137,6 +169,14 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size) {
     return make_pair(sumWritten, totalTime);
 }
 
+void ExitTestThread(HANDLE& writeFile) {
+    SendMessage(pb_progress, PBM_SETPOS, 0, 0);
+    CloseHandle(writeFile);
+    EnableWindow(btn_start, true);
+    ExitThread(0);
+}
+
+// TODO
 void readTest() {
     //  writeTest(NULL);
 
@@ -193,8 +233,6 @@ void readTest() {
 
         sumRead += dwBytesRead;
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
-
-        Sleep(1000);
     }
 
     //отслеживаем ошибки
@@ -215,7 +253,7 @@ void readTest() {
     CloseHandle(readFile);
 }
 
-// Преобразование строки в аргумент флага
+// Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
 int getModeFromType(const char* type) {
     if (!strcmp(type, "RANDOM_ACCESS"))
         return FILE_FLAG_RANDOM_ACCESS;
