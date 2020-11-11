@@ -17,8 +17,8 @@ using namespace std;
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
 struct Config {
     DWORD bufferSize;
-    DWORD32 fileSize;
     DWORD mode;
+    DWORD fileSize;
     const TCHAR* disk;
     DWORD countTests;
 };
@@ -132,7 +132,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
     //записываем в файл count раз массива данных
     for (int i = 0; i < iterations; ++i)
     {
-        if (threadIsCanceled == TRUE)
+        if (threadStatus == CANCELED)
             ExitTestThread(writeFile);
         
         puts("Working");
@@ -172,7 +172,6 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
 void ExitTestThread(HANDLE& writeFile) {
     SendMessage(pb_progress, PBM_SETPOS, 0, 0);
     CloseHandle(writeFile);
-    threadIsCanceled = TRUE;
     EnableWindow(btn_start, true);
     ExitThread(0);
 }

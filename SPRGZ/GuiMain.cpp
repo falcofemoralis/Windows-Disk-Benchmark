@@ -9,6 +9,11 @@
 #define ID_CB 30
 #define ID_TEXT 40
 
+// Для треда
+#define PAUSE 2
+#define WORKING 1
+#define CANCELED 0
+
 // id UI элементов 
 #define btn_stop_id ID_BTN
 #define btn_pause_id ID_BTN + 1
@@ -32,14 +37,14 @@ const TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 
 // Константы значений для юзер конфига
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
-DWORD fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
+unsigned int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 
 HWND btn_stop, btn_pause, btn_start, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, text_read, text_write, pb_progress;
 HWND *rb_group_modes;
 
 DWORD mainThreadId; // ID основного потока
 HANDLE testThread;
-BOOL threadIsCanceled = TRUE;
+DWORD threadStatus = CANCELED;
 
 // Инициализация всех необходимых первоначальных данных
 void init();
@@ -99,9 +104,9 @@ void init() {
 	// Инциализация первоначального состояния юзер конфига
 	userConfig.bufferSize = buffSizes[0];
 	userConfig.countTests = 1;
-	userConfig.disk = disks[0];;
 	userConfig.fileSize = fileSizes[0];
 	userConfig.mode = getModeFromType(modes[0]);
+	userConfig.disk = disks[0];
 }
 
 /////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
@@ -245,21 +250,32 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		if (HWND(lParam) == btn_start) {
 			puts("Resume");
 			EnableWindow(btn_start, false);
-			if (threadIsCanceled == TRUE)
-				testThread = CreateThread(NULL, 0, writeTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
-			threadIsCanceled = FALSE;
+			testThread = CreateThread(NULL, 0, writeTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
+			threadStatus = WORKING;
 			ResumeThread(testThread);
 		}
 
 		if (HWND(lParam) == btn_pause) {
 			Sleep(50);
-			SuspendThread(testThread);
+
+			if (threadStatus != PAUSE) {
+				threadStatus = PAUSE;
+				SetWindowText(btn_pause, "Resume");
+				SuspendThread(testThread);
+			}
+			else {
+				threadStatus = WORKING;
+				SetWindowText(btn_pause, "Pause");
+				ResumeThread(testThread);
+			}
+
 			puts("paused");
 		}
 
 		if (HWND(lParam) == btn_stop) {
 			EnableWindow(btn_start, true);
-			threadIsCanceled = TRUE; 
+			SetWindowText(btn_pause, "Pause");
+			threadStatus = CANCELED;
 			ResumeThread(testThread); // Завершаем поток естественным образом
 			puts("stoped");
 		}
