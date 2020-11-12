@@ -29,7 +29,8 @@ const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
 
 DWORD WINAPI writeTest(LPVOID param);
 RESULT writeToFile(HANDLE, DWORD, DWORD);
-void readTest();
+DWORD WINAPI readTest(HANDLE, TCHAR *);
+RESULT readFileFunc(HANDLE, DWORD, DWORD);
 void ExitTestThread(HANDLE& writeFile);
 
 // ДЛЯ ТЕСТА, если необходимо что то затестить без UI, снимаете комменты с этого мейна и комментите в GUI
@@ -55,7 +56,7 @@ DWORD WINAPI writeTest(LPVOID param) {
 
     //создаем файл "test.bin", после закрытия хендла файл будет удален
     HANDLE writeFile = CreateFile(fullPath,
-        GENERIC_WRITE,
+        GENERIC_WRITE | GENERIC_READ,
         0,
         NULL,
         CREATE_ALWAYS,
@@ -71,7 +72,7 @@ DWORD WINAPI writeTest(LPVOID param) {
 
     DOUBLE totalTime = 0, totalmb = 0;
 
-    _tprintf(TEXT("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d"),
+    _tprintf(TEXT("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d\n"),
         fullPath,
         userConfig.bufferSize / 1024,
         userConfig.fileSize / 1024, 
@@ -84,8 +85,8 @@ DWORD WINAPI writeTest(LPVOID param) {
 
         //отслеживаем ошибки
         if (test.first == NULL) {
-            ExitTestThread(writeFile);
             _tprintf(TEXT("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
+            ExitTestThread(writeFile);
         }
 
         // Подсчет суммарного количества записаных байт и затраченого времени
@@ -102,9 +103,9 @@ DWORD WINAPI writeTest(LPVOID param) {
     _tcscat_s(str, TEXT(" МБ\\с"));
     Sleep(800);
     SetWindowText(text_write, str);
-
-    ExitTestThread(writeFile);
-    puts("Ended");
+    
+    readTest(writeFile, fullPath);
+    puts("Ended Write Test");
 }
 
 RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
@@ -176,55 +177,90 @@ void ExitTestThread(HANDLE& writeFile) {
     ExitThread(0);
 }
 
-// TODO
-void readTest() {
-    //  writeTest(NULL);
+DWORD WINAPI readTest(HANDLE writeFile, TCHAR fullPath[]) {
 
-    LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
-    LARGE_INTEGER Frequency;
+    puts("Started Read Test");   
 
-    //массив данных
-    char* DataBuffer = new char[1024];
+    DOUBLE totalTime = 0, totalmb = 0;
+    
+    //Вывод информации о тесте
+    _tprintf(TEXT("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d\n"),
+        fullPath,
+        userConfig.bufferSize / 1024,
+        userConfig.fileSize / 1024,
+        userConfig.mode,
+        userConfig.countTests);
+    for (DWORD i = 0; i < userConfig.countTests; i++)
+    {
+        // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
+        RESULT test = readFileFunc(writeFile, userConfig.bufferSize, i);
 
-    DWORD dwBytesRead = 0;
-    DWORD dwBytesTotalRead = 0;
-    BOOL bErrorFlag = FALSE;
+        //отслеживаем ошибки
+        if (test.first == NULL) {
+            _tprintf(TEXT("Terminal failure: Unable to read file with error code %d.\n"), GetLastError());
+            ExitTestThread(writeFile);
+        }
 
-    //открываем файл "test.bin"
-    HANDLE readFile = CreateFile(_T("test.bin"),
-        GENERIC_READ,
-        FILE_SHARE_READ,
-        NULL,
-        OPEN_EXISTING,
-        FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING | FILE_ATTRIBUTE_NORMAL,
-        NULL);
-
-    //если файл не открылся
-    if (readFile == INVALID_HANDLE_VALUE) {
-        _tprintf(TEXT("Terminal failure: Unable to read from file with error code %d.\n"), GetLastError());
-        return;
+        // Подсчет суммарного количества записаных байт и затраченого времени
+        totalmb += test.first;
+        totalTime += test.second;
     }
 
-    //начинаем отсчет времени
-    _tprintf(TEXT("Testing...\n"));
+    //выводим информацию про результаты тестирования
+    totalmb = ((totalmb / (DOUBLE)1024)) / (DOUBLE)1024; // Перевод в мегабайты
 
-    DWORD sumRead = 0;
-    double totalTime = 0;
+    TCHAR str[20];
+    DOUBLE res = (DOUBLE)totalmb / totalTime;
+    _stprintf_s(str, _T("%.2lf"), res);
+    _tcscat_s(str, TEXT(" МБ\\с"));
+    Sleep(800);
+    SetWindowText(text_read, str);
+
+    ExitTestThread(writeFile);
+    puts("Ended");
+    return 0;
+}
+
+RESULT readFileFunc(HANDLE readFile, DWORD buffer_size, DWORD iter) {
+
+    SetFilePointer(readFile,NULL, NULL, FILE_BEGIN);
+    LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
+    LARGE_INTEGER Frequency;
+    BOOL bErrorFlag=1;
+
+    char* DataBuffer = new char[buffer_size];
+
+    DOUBLE totalTime = 0;
+    DWORD iterations = userConfig.fileSize / buffer_size;
+    DWORD dwBytesToRead = buffer_size * iterations;
+    DWORD dwBytesRead = 0, sumRead = 0;
+
+    //начинаем отсчет времени
     QueryPerformanceFrequency(&Frequency);
 
-    //записываем в файл count раз массива данныхъ
-    for (int i = 0; i < 5; ++i)
+    // Для отображение прогресса на прогресс баре
+    DWORD curProgress = (iterations * iter * 100);
+    DWORD allSteps = iterations * userConfig.countTests;
+
+    //читаем файл count раз массива данных
+    for (int i = 0; i < iterations; ++i)
     {
+        if (threadStatus == CANCELED)
+            ExitTestThread(readFile);
+
+        puts("Working");
         QueryPerformanceCounter(&StartingTime);
 
         bErrorFlag = ReadFile(
             readFile,
             DataBuffer,
-            (1024),
+            buffer_size,
             &dwBytesRead,
             NULL);
 
         QueryPerformanceCounter(&EndingTime);
+
+        if (bErrorFlag == FALSE) return make_pair(NULL, NULL);
 
         //подсчитываем время
         ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
@@ -233,24 +269,18 @@ void readTest() {
 
         sumRead += dwBytesRead;
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
+
+        //установка прогресса
+        SendMessage(pb_progress, PBM_SETPOS, ((100 * (i + 1) + curProgress) / allSteps), 0);
     }
 
-    //отслеживаем ошибки
-    if (FALSE == bErrorFlag)
+    //Проверяем, чтобы количество считанных байт было равно количеству, заявленному тестом
+    if (sumRead != dwBytesToRead)
     {
-        _tprintf(TEXT("Terminal failure: Unable to read from file with error code %d.\n"), GetLastError());
+        _tprintf(TEXT("Error: sumRead != dwBytesToRead\n"));
+        return make_pair(NULL, NULL);
     }
-    else
-    {
-        //выводим информацию про результаты тестирования
-        double totalmb = (((sumRead) / (double)1024)) / (double)1024;
-
-        _tprintf(TEXT("Read %lf mb successfully.\n"), totalmb);
-        _tprintf(TEXT("Elapsed time = %lf seconds\n"), totalTime);
-        _tprintf(TEXT("Your read speed is %lf mb/sec\n\n"), (double)totalmb / totalTime);
-    }
-
-    CloseHandle(readFile);
+    return make_pair(sumRead, totalTime);
 }
 
 // Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
