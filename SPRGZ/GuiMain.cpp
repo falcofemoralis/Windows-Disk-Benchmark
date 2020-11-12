@@ -33,6 +33,7 @@ const TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL", "NO_BUF
 const TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB" };
 const TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB"};
 const TCHAR* disks[26];
+const TCHAR* disksNames[26];
 const TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 
 // Константы значений для юзер конфига
@@ -77,14 +78,27 @@ int main() {
 void getDisks() {
 	//определение дисков
 	DWORD dr = GetLogicalDrives();
+
 	int countDisk = 0; // Счетчик для записи в массив всех дисков
 
 	for (int i = 0; i < 26; i++)
 	{
-		bool find = ((dr >> i) & 0x00000001); // Все диски представляются битовой маской, если бит 0 установлен в единицу, значит существует диск А и так далее по алфавиту
-		if (find) {
+		bool isFound = ((dr >> i) & 0x00000001); // Все диски представляются битовой маской, если бит 0 установлен в единицу, значит существует диск А и так далее по алфавиту
+		if (isFound) {
+			//получем букву диска
 			char diskChar = i + 65; // Имя диска
 			disks[countDisk] = new TCHAR[5]{ diskChar, ':', '\\', '\0' }; // Создание строки типа пути диска "X:\"
+
+			//получаем имя диска
+			TCHAR* VolumeName = new TCHAR[MAX_PATH];
+			if (!GetVolumeInformation(disks[countDisk], VolumeName, MAX_PATH, NULL, NULL, NULL, NULL, 0));
+
+			//создаем название из буквы диска и имени диска, если у диска нету названия, даем имя Local Disk
+			TCHAR* name = new TCHAR[MAX_PATH + 5]{ '(', diskChar, ':', ')', ' ' };
+			if (_tcslen(VolumeName) == 0) _tcscat_s(name, MAX_PATH + 5, TEXT("Local Disk"));
+			else _tcscat_s(name, MAX_PATH + 5, VolumeName);
+
+			disksNames[countDisk] = name;
 			++countDisk;
 		}
 	}
@@ -186,7 +200,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
 		//Диски
 		createText("Drive to test:", new ViewParam{ 10, 13, 90, 30 }, NULL, hwnd, FW_MEDIUM, 18);
-		cb_list_disks = createCombobox("Диски", new ViewParam{ 110, 10, 310, 400 }, disks, sizeof(disks) / sizeof(disks[0]), cb_list_disks_id, hwnd);
+		cb_list_disks = createCombobox("Диски", new ViewParam{ 110, 10, 310, 400 }, disksNames, sizeof(disksNames) / sizeof(disksNames[0]), cb_list_disks_id, hwnd);
 
 		//Ряд настроек размеров
 		createBox("File size", new ViewParam{ 30, 60, 80, 40 }, hwnd, NULL);
