@@ -24,8 +24,8 @@ struct Config {
 };
 Config userConfig;
 
-const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; //16 по варианту
-const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
+const DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; 
+const DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
 DWORD WINAPI writeTest(LPVOID param);
 RESULT writeToFile(HANDLE, DWORD, DWORD);
@@ -33,22 +33,7 @@ DWORD WINAPI readTest(HANDLE, TCHAR *);
 RESULT readFileFunc(HANDLE, DWORD, DWORD);
 void ExitTestThread(HANDLE& writeFile);
 
-// ДЛЯ ТЕСТА, если необходимо что то затестить без UI, снимаете комменты с этого мейна и комментите в GUI
-
-//int __cdecl _tmain(int argc, TCHAR* argv[])
-//{
-//    userConfig.bufferSize = 16 * MB;
-//    userConfig.mode = FILE_FLAG_RANDOM_ACCESS;
-//    userConfig.countTests = 5;
-//    userConfig.disk = "C:\\";
-//    writeTest();
-//    //readTest();
-//    system("Pause");
-//} 
-
-DWORD WINAPI writeTest(LPVOID param) {
-
-    puts("Started");
+DWORD WINAPI writeTest(LPVOID param) {;
     // Определение полного пути к файлу
     TCHAR fullPath[20] = _T("");
     _tcscat_s(fullPath, userConfig.disk);
@@ -105,7 +90,6 @@ DWORD WINAPI writeTest(LPVOID param) {
     SetWindowText(text_write, str);
     
     readTest(writeFile, fullPath);
-    puts("Ended Write Test");
 }
 
 RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
@@ -115,8 +99,12 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
 
     //тестовый массив данных
     char* DataBuffer = new char[buffer_size];
-    for (int i = 0; i < buffer_size; i++)
-        DataBuffer[i] = 't';
+    TCHAR Data[] = _T("Vladyslav");
+
+    for (int i = 0; i < buffer_size; i++) 
+        DataBuffer[i] = Data[i % 9];
+    
+     
 
     DOUBLE totalTime = 0;
     DWORD iterations = userConfig.fileSize / buffer_size;
@@ -136,7 +124,6 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
         if (threadStatus == CANCELED)
             ExitTestThread(writeFile);
         
-        puts("Working");
         QueryPerformanceCounter(&StartingTime);
 
         bErrorFlag = WriteFile(
@@ -217,7 +204,6 @@ DWORD WINAPI readTest(HANDLE writeFile, TCHAR fullPath[]) {
     SetWindowText(text_read, str);
 
     ExitTestThread(writeFile);
-    puts("Ended");
     return 0;
 }
 
@@ -248,7 +234,6 @@ RESULT readFileFunc(HANDLE readFile, DWORD buffer_size, DWORD iter) {
         if (threadStatus == CANCELED)
             ExitTestThread(readFile);
 
-        puts("Working");
         QueryPerformanceCounter(&StartingTime);
 
         bErrorFlag = ReadFile(

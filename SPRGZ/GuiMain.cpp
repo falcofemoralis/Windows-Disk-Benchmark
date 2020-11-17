@@ -29,16 +29,16 @@
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 // Строковые константы для размещения их в выпадающие списки
-const TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL", "NO_BUFFERING"};
+const TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL"};
 const TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB" };
-const TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB"};
+const TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB", "2048 MB"};
 const TCHAR* disks[26];
 const TCHAR* disksNames[26];
 const TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 
 // Константы значений для юзер конфига
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
-unsigned int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB };
+unsigned int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
 HWND btn_stop, btn_pause, btn_start, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, text_read, text_write, pb_progress;
 HWND *rb_group_modes;
