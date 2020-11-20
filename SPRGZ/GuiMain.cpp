@@ -95,7 +95,7 @@ void getDisks() {
 
 			//создаем название из буквы диска и имени диска, если у диска нету названия, даем имя Local Disk
 			TCHAR* name = new TCHAR[MAX_PATH + 5]{ '(', diskChar, ':', ')', ' ' };
-			if (_tcslen(VolumeName) == 0) _tcscat_s(name, MAX_PATH + 5, TEXT("Local Disk"));
+			if (_tcslen(VolumeName) == 0) _tcscat_s(name, MAX_PATH + 5, _T("Local Disk"));
 			else _tcscat_s(name, MAX_PATH + 5, VolumeName);
 
 			disksNames[countDisk] = name;

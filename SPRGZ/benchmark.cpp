@@ -37,7 +37,7 @@ DWORD WINAPI writeTest(LPVOID param) {;
     // Определение полного пути к файлу
     TCHAR fullPath[20] = _T("");
     _tcscat_s(fullPath, userConfig.disk);
-    _tcscat_s(fullPath, TEXT("test.bin"));
+    _tcscat_s(fullPath, _T("test.bin"));
 
     //создаем файл "test.bin", после закрытия хендла файл будет удален
     HANDLE writeFile = CreateFile(fullPath,
@@ -50,14 +50,14 @@ DWORD WINAPI writeTest(LPVOID param) {;
 
     //если файл не создался
     if (writeFile == INVALID_HANDLE_VALUE) {
-        _tprintf(TEXT("Terminal failure: Unable to create file for write with error code %d.\n"), GetLastError());
+        _tprintf(_T("Terminal failure: Unable to create file for write with error code %d.\n"), GetLastError());
         ExitTestThread(writeFile);
         return NULL;
     }
 
     DOUBLE totalTime = 0, totalmb = 0;
 
-    _tprintf(TEXT("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d\n"),
+    _tprintf(_T("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d\n"),
         fullPath,
         userConfig.bufferSize / 1024,
         userConfig.fileSize / 1024, 
@@ -70,7 +70,7 @@ DWORD WINAPI writeTest(LPVOID param) {;
 
         //отслеживаем ошибки
         if (test.first == NULL) {
-            _tprintf(TEXT("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
+            _tprintf(_T("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
             ExitTestThread(writeFile);
         }
 
@@ -85,7 +85,7 @@ DWORD WINAPI writeTest(LPVOID param) {;
     TCHAR str[20];
     DOUBLE res = (DOUBLE)totalmb / totalTime;
     _stprintf_s(str, _T("%.2lf"), res);
-    _tcscat_s(str, TEXT(" МБ\\с"));
+    _tcscat_s(str, _T(" МБ\\с"));
     Sleep(800);
     SetWindowText(text_write, str);
     
@@ -151,7 +151,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
 
     if (sumWritten != dwBytesToWrite)
     {
-        _tprintf(TEXT("Error: dwBytesWritten != dwBytesToWrite\n"));
+        _tprintf(_T("Error: dwBytesWritten != dwBytesToWrite\n"));
         return make_pair(NULL, NULL);
     }
     return make_pair(sumWritten, totalTime);
@@ -171,7 +171,7 @@ DWORD WINAPI readTest(HANDLE writeFile, TCHAR fullPath[]) {
     DOUBLE totalTime = 0, totalmb = 0;
     
     //Вывод информации о тесте
-    _tprintf(TEXT("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d\n"),
+    _tprintf(_T("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d\n"),
         fullPath,
         userConfig.bufferSize / 1024,
         userConfig.fileSize / 1024,
@@ -184,7 +184,7 @@ DWORD WINAPI readTest(HANDLE writeFile, TCHAR fullPath[]) {
 
         //отслеживаем ошибки
         if (test.first == NULL) {
-            _tprintf(TEXT("Terminal failure: Unable to read file with error code %d.\n"), GetLastError());
+            _tprintf(_T("Terminal failure: Unable to read file with error code %d.\n"), GetLastError());
             ExitTestThread(writeFile);
         }
 
@@ -199,7 +199,7 @@ DWORD WINAPI readTest(HANDLE writeFile, TCHAR fullPath[]) {
     TCHAR str[20];
     DOUBLE res = (DOUBLE)totalmb / totalTime;
     _stprintf_s(str, _T("%.2lf"), res);
-    _tcscat_s(str, TEXT(" МБ\\с"));
+    _tcscat_s(str, _T(" МБ\\с"));
     Sleep(800);
     SetWindowText(text_read, str);
 
@@ -262,7 +262,7 @@ RESULT readFileFunc(HANDLE readFile, DWORD buffer_size, DWORD iter) {
     //Проверяем, чтобы количество считанных байт было равно количеству, заявленному тестом
     if (sumRead != dwBytesToRead)
     {
-        _tprintf(TEXT("Error: sumRead != dwBytesToRead\n"));
+        _tprintf(_T("Error: sumRead != dwBytesToRead\n"));
         return make_pair(NULL, NULL);
     }
     return make_pair(sumRead, totalTime);
