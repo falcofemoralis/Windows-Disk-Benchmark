@@ -91,7 +91,7 @@ void getDisks() {
 
 			//получаем имя диска
 			TCHAR* VolumeName = new TCHAR[MAX_PATH];
-			if (!GetVolumeInformation(disks[countDisk], VolumeName, MAX_PATH, NULL, NULL, NULL, NULL, 0));
+			GetVolumeInformation(disks[countDisk], VolumeName, MAX_PATH, NULL, NULL, NULL, NULL, 0);
 
 			//создаем название из буквы диска и имени диска, если у диска нету названия, даем имя Local Disk
 			TCHAR* name = new TCHAR[MAX_PATH + 5]{ '(', diskChar, ':', ')', ' ' };
