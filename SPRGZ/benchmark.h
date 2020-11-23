@@ -24,6 +24,6 @@ struct Config {
 extern Config userConfig;
 
 DWORD WINAPI writeTest(LPVOID param); // Тест на запись
-void readTest(); // Тест на чтение
+DWORD WINAPI readTest(LPVOID param); // Тест на чтение
 int getModeFromType(const char* type);
 

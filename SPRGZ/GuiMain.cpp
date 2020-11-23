@@ -17,7 +17,8 @@
 // id UI элементов 
 #define btn_stop_id ID_BTN
 #define btn_pause_id ID_BTN + 1
-#define btn_start_id ID_BTN + 2
+#define btn_startRead_id ID_BTN + 2
+#define btn_startWrite_id ID_BTN + 3
 #define cb_list_files_id ID_CB
 #define cb_list_disks_id ID_CB + 1
 #define cb_list_buffers_id ID_CB + 2
@@ -40,11 +41,11 @@ const TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
 unsigned int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
-HWND btn_stop, btn_pause, btn_start, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, text_read, text_write, pb_progress;
+HWND btn_stop, btn_pause, btn_startRead, btn_startWrite, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, text_read, text_write, pb_progress;
 HWND *rb_group_modes;
 
 DWORD mainThreadId; // ID основного потока
-HANDLE testThread;
+HANDLE workingThread;
 DWORD threadStatus = CANCELED;
 
 // Инициализация всех необходимых первоначальных данных
@@ -206,12 +207,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		createBox("File size", new ViewParam{ 30, 60, 80, 40 }, hwnd, NULL);
 		cb_list_files = createCombobox("Размер файла", new ViewParam{ 20, 60, 80, 500 }, fileNames, sizeof(fileNames) / sizeof(fileNames[0]), cb_list_files_id, hwnd);
 
-		createBox("Buffer size", new ViewParam{ 190, 60, 80, 40 }, hwnd, NULL); 
+		createBox("Buffer size", new ViewParam{ 190, 60, 80, 40 }, hwnd, NULL);
 		cb_list_buffers = createCombobox("Размер буфера", new ViewParam{ 180, 60, 80, 500 }, buffNames, sizeof(buffNames) / sizeof(buffNames[0]), cb_list_buffers_id, hwnd);
 
 		createBox("Passes", new ViewParam{ 340, 60, 80, 40 }, hwnd, NULL);
 		cb_list_testCounts = createCombobox("Кол-во тестов", new ViewParam{ 330, 60, 80, 500 }, testCounts, sizeof(testCounts) / sizeof(testCounts[0]), cb_list_testCounts_id, hwnd);
-	
+
 		//Блок результатов
 		createBox("Test results", new ViewParam{ 30, 130, 240, 120 }, hwnd, BS_CENTER);
 		createBox("Write", new ViewParam{ 40, 150, 95, 90 }, hwnd, BS_CENTER);
@@ -222,11 +223,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		//Блок режимов
 		createBox("Modes", new ViewParam{ 300, 130, 120, 120 }, hwnd, BS_CENTER);
 		rb_group_modes = createRadiobtnGroup("Modes buttons", new ViewParam{ 285, 140, 125, 20 }, modes, sizeof(modes) / sizeof(modes[0]), NULL, hwnd);
-
+		
 		//кнопки управления
-		btn_start = createButton("Start", new ViewParam{ 10, 260, 120, 30 }, btn_start_id, hwnd);
-		btn_pause = createButton("Pause", new ViewParam{ 160, 260, 120, 30 }, btn_pause_id, hwnd);
-		btn_stop = createButton("Stop", new ViewParam{ 300, 260, 120, 30 }, btn_stop_id, hwnd);
+		btn_startRead = createButton("Read test", new ViewParam{ 165, 210, 80, 25 }, btn_startRead_id, hwnd);
+		btn_startWrite = createButton("Write test", new ViewParam{ 35, 210, 80, 25 }, btn_startWrite_id, hwnd);
+		btn_pause = createButton("Pause", new ViewParam{ 90, 260, 120, 30 }, btn_pause_id, hwnd);
+		btn_stop = createButton("Stop", new ViewParam{ 230, 260, 120, 30 }, btn_stop_id, hwnd);
 
 		//прогресс бар
 		pb_progress = createProgressBar(new ViewParam{ 10, 300, 410, 30 }, NULL, hwnd);
@@ -252,21 +254,29 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			}
 		}
 
-    	//нажата одна из radio button
+		//нажата одна из radio button
 		if (HIWORD(wParam) == BN_CLICKED) {
 			for (DWORD i = 0; i < sizeof(modes) / sizeof(modes[0]); ++i)
 				if (HWND(lParam) == rb_group_modes[i]) {
 					userConfig.mode = getModeFromType(modes[i]);
-				}	
+				}
 		}
 
-		// Управление потом тестирования (самим тестом)
-		if (HWND(lParam) == btn_start) {
-			puts("Resume");
-			EnableWindow(btn_start, false);
-			testThread = CreateThread(NULL, 0, writeTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
+		// Управление потоком тестирования (самим тестом)
+		if (HWND(lParam) == btn_startWrite) {
+			EnableWindow(btn_startWrite, false);
+			EnableWindow(btn_startRead, false);
+			workingThread = CreateThread(NULL, 0, writeTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
 			threadStatus = WORKING;
-			ResumeThread(testThread);
+			ResumeThread(workingThread);
+		}
+
+		if (HWND(lParam) == btn_startRead) {
+			EnableWindow(btn_startWrite, false);
+			EnableWindow(btn_startRead, false);
+			workingThread = CreateThread(NULL, 0, readTest, NULL, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL);
+			threadStatus = WORKING;
+			ResumeThread(workingThread);
 		}
 
 		if (HWND(lParam) == btn_pause) {
@@ -275,26 +285,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			if (threadStatus != PAUSE) {
 				threadStatus = PAUSE;
 				SetWindowText(btn_pause, "Resume");
-				SuspendThread(testThread);
+				SuspendThread(workingThread);
 			}
 			else {
 				threadStatus = WORKING;
 				SetWindowText(btn_pause, "Pause");
-				ResumeThread(testThread);
+				ResumeThread(workingThread);
 			}
-
-			puts("paused");
 		}
 
 		if (HWND(lParam) == btn_stop) {
-			EnableWindow(btn_start, true);
+			EnableWindow(btn_startWrite, true);
+			EnableWindow(btn_startRead, true);
 			SetWindowText(btn_pause, "Pause");
 			threadStatus = CANCELED;
-			ResumeThread(testThread); // Завершаем поток естественным образом
-			puts("stoped");
+			ResumeThread(workingThread); // Завершаем поток естественным образом
 		}
-
-
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0); // Закрытие приложени
