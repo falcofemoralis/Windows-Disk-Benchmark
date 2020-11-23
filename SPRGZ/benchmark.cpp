@@ -32,8 +32,14 @@ RESULT writeToFile(HANDLE, DWORD, DWORD);
 DWORD WINAPI readTest(HANDLE, TCHAR *);
 RESULT readFileFunc(HANDLE, DWORD, DWORD);
 void ExitTestThread(HANDLE& writeFile);
+VOID WriteCounter(double* arr, int size);
 
-DWORD WINAPI writeTest(LPVOID param) {;
+double* a;  // указатель на массив
+int i, n;
+
+DWORD WINAPI writeTest(LPVOID param) {
+
+
     // Определение полного пути к файлу
     TCHAR fullPath[20] = _T("");
     _tcscat_s(fullPath, userConfig.disk);
@@ -118,6 +124,8 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
     DWORD curProgress = (iterations * iter * 100);
     DWORD allSteps = iterations * userConfig.countTests;
 
+	a = (double*)malloc(iterations * sizeof(double));
+
     //записываем в файл count раз массива данных
     for (int i = 0; i < iterations; ++i)
     {
@@ -136,11 +144,18 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
         QueryPerformanceCounter(&EndingTime);
 
         if (bErrorFlag == FALSE) return make_pair(NULL, NULL);
+		
+		
+
 
         //подсчитываем время
         ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
         ElapsedMicroseconds.QuadPart *= 1000000;
         ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
+
+		//Пока что вывод итераций в консоль
+		a[i]= ElapsedMicroseconds.QuadPart / (double)1000000;
+		printf("%d %f\n", i, a[i]);
 
         sumWritten += dwBytesWritten;
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
@@ -154,8 +169,53 @@ RESULT writeToFile(HANDLE writeFile, DWORD buffer_size, DWORD iter) {
         _tprintf(_T("Error: dwBytesWritten != dwBytesToWrite\n"));
         return make_pair(NULL, NULL);
     }
+	WriteCounter(a, iterations);
+	free(a);
     return make_pair(sumWritten, totalTime);
 }
+
+
+
+
+
+
+VOID WriteCounter(double* arr, int size ) {
+	DWORD dwTemp;
+	printf("Zapis");
+	LPCTSTR  lpFileName = "Write_test.txt";
+	HANDLE hFile = CreateFile(lpFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (INVALID_HANDLE_VALUE == hFile) {
+		return;
+	}
+	for (int i = 0; i < size; i++)
+	{/*
+		char  buffer[20];
+		sprintf(buffer, "%d %f\n", i, arr[i]);
+		printf("%s", buffer);
+		WriteFile(hFile, &buffer, sizeof(buffer), &dwTemp, NULL);
+		*/
+
+		wchar_t  buffer[50];
+		swprintf(buffer, 200, L"%d %f\n", i, arr[i]);
+		printf("%s", buffer);
+		WriteFile(hFile, &buffer, sizeof(buffer), &dwTemp, NULL);
+		
+	}
+
+	CloseHandle(hFile);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 void ExitTestThread(HANDLE& writeFile) {
     SendMessage(pb_progress, PBM_SETPOS, 0, 0);
