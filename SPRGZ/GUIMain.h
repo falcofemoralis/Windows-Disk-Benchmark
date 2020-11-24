@@ -40,7 +40,7 @@ struct ViewParam {
 	DWORD x, y;
 	DWORD width, height;
 };
-void createBox(const TCHAR* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr);
+VOID createBox(const TCHAR* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr);
 HWND createCombobox(const TCHAR* nameBox, ViewParam* params, const TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
 HWND createButton(const TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd);
 HWND createText(const TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, DWORD isBold, DWORD size);
@@ -50,8 +50,8 @@ HWND* createRadiobtnGroup(const TCHAR* nameBtn, ViewParam* params, const TCHAR* 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Инициализация всех необходимых первоначальных данных
-void init();
-void drawMainWindow(HWND hwnd);
-void startTest(DWORD(*test)(LPVOID param));
-void pauseTest();
-void stopTest();
+VOID init();
+VOID drawMainWindow(HWND hwnd);
+VOID startTest(DWORD(*test)(LPVOID param));
+VOID pauseTest();
+VOID stopTest();

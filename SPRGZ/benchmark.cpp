@@ -6,6 +6,7 @@
 #include <utility>
 #include <CommCtrl.h>
 #include "GUIMain.h"
+#include "benchmark.h"
 
 #define KB 1024
 #define MB KB*1024
@@ -15,25 +16,12 @@
 using namespace std;
 
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении 
-struct Config {
-    DWORD bufferSize;
-    DWORD mode;
-    DWORD fileSize;
-    const TCHAR* disk;
-    DWORD countTests;
-};
+
 Config userConfig;
 
 CONST DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; 
 CONST DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
-DWORD WINAPI writeTest(LPVOID);
-RESULT writeToFile(HANDLE, DWORD);
-DWORD WINAPI readTest(LPVOID);
-RESULT readFromFile(HANDLE, DWORD, DWORD);
-VOID ExitTestThread(HANDLE&);
-VOID SaveResults(DOUBLE*, DWORD, TCHAR[]);
-VOID createTestFile(TCHAR[]);
 
 VOID SaveResults(DOUBLE* arr, DWORD size, TCHAR lpFileName[]) {
     DWORD dwTemp;
@@ -132,10 +120,10 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest) {
     BOOL bErrorFlag;
 
     //тестовый массив данных
-    char* DataBuffer = new char[userConfig.bufferSize];
+	TCHAR* DataBuffer = new TCHAR[userConfig.bufferSize];
     TCHAR Data[] = _T("Vladyslav");
 
-    for (int i = 0; i < userConfig.bufferSize; i++)
+    for (DWORD i = 0; i < userConfig.bufferSize; i++)
         DataBuffer[i] = Data[i % 9];
 
     DOUBLE totalTime = 0;
@@ -153,7 +141,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest) {
     DOUBLE *buffersTimes = new DOUBLE[iterations];
 
     //записываем в файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (DWORD i = 0; i < iterations; ++i)
     {
         if (threadStatus == CANCELED)
             ExitTestThread(writeFile);
@@ -212,10 +200,10 @@ VOID createTestFile(TCHAR fullPath[]) {
     BOOL bErrorFlag;
 
     //тестовый массив данных
-    char* DataBuffer = new char[userConfig.bufferSize];
+	TCHAR* DataBuffer = new TCHAR[userConfig.bufferSize];
     TCHAR Data[] = _T("NoName");
 
-    for (int i = 0; i < userConfig.bufferSize; i++)
+    for (DWORD i = 0; i < userConfig.bufferSize; i++)
         DataBuffer[i] = Data[i % 9];
 
     DWORD iterations = (DWORD)(userConfig.fileSize / userConfig.bufferSize) + 1;
@@ -225,7 +213,7 @@ VOID createTestFile(TCHAR fullPath[]) {
     DOUBLE* buffersTimes = new DOUBLE[iterations];
 
     //записываем в файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (DWORD i = 0; i < iterations; ++i)
     {
         bErrorFlag = WriteFile(
             testFile,
@@ -318,7 +306,7 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest) {
     LARGE_INTEGER Frequency;
     BOOL bErrorFlag=1;
 
-    char* DataBuffer = new char[buffer_size];
+	TCHAR* DataBuffer = new TCHAR[buffer_size];
 
     DOUBLE totalTime = 0;
     DWORD iterations = userConfig.fileSize / buffer_size;
@@ -335,7 +323,7 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest) {
     DOUBLE* buffersTimes = new DOUBLE[iterations];
 
     //читаем файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (DWORD i = 0; i < iterations; ++i)
     {
         if (threadStatus == CANCELED)
             ExitTestThread(readFile);
@@ -380,7 +368,7 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest) {
 }
 
 // Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
-DWORD getModeFromType(const TCHAR* type) {
+DWORD getModeFromType(CONST TCHAR* type) {
     if (!_tcscmp(type, "RANDOM_ACCESS"))
         return FILE_FLAG_RANDOM_ACCESS;
     else if (!_tcscmp(type, "WRITE_THROUGH"))

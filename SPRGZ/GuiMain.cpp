@@ -7,16 +7,16 @@
 #include "GUIMain.h"
 
 // Строковые константы для размещения их в выпадающие списки
-const TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL"};
-const TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB" };
-const TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB", "2048 MB"};
-const TCHAR* disks[26];
-const TCHAR* disksNames[26];
-const TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
+CONST TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL"};
+CONST TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB" };
+CONST TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB", "2048 MB"};
+CONST TCHAR* disks[26];
+CONST TCHAR* disksNames[26];
+CONST TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 
 // Константы значений для юзер конфига
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
-DWORD fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
+unsigned int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
 HWND btn_stop, btn_pause, btn_startRead, btn_startWrite, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, text_read, text_write, pb_progress;
 HWND *rb_group_modes;
@@ -25,7 +25,7 @@ DWORD mainThreadId; // ID основного потока
 HANDLE workingThread;
 DWORD threadStatus = CANCELED;
 
-int main() {
+DWORD main() {
 	//инициализация 
 	init();
 
@@ -70,7 +70,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_COMMAND:
 		// Если wParam = CBN_SELCHANGE, значит было выбрано одно из полей выпадающего списка
 		if (HIWORD(wParam) == CBN_SELCHANGE) {
-			int selectedId;
+			DWORD selectedId;
 			selectedId = SendMessage(HWND(lParam), CB_GETCURSEL, 0, 0); // Индекс поля выпадающего списка
 
 			if (HWND(lParam) == cb_list_buffers)
@@ -113,18 +113,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return DefWindowProcA(hwnd, message, wParam, lParam);
 }
 
-void getDisks() {
+VOID getDisks() {
 	//определение дисков
 	DWORD dr = GetLogicalDrives();
 
-	int countDisk = 0; // Счетчик для записи в массив всех дисков
+	DWORD countDisk = 0; // Счетчик для записи в массив всех дисков
 
-	for (int i = 0; i < 26; i++)
+	for (DWORD i = 0; i < 26; i++)
 	{
 		bool isFound = ((dr >> i) & 0x00000001); // Все диски представляются битовой маской, если бит 0 установлен в единицу, значит существует диск А и так далее по алфавиту
 		if (isFound) {
 			//получем букву диска
-			char diskChar = i + 65; // Имя диска
+			TCHAR diskChar = i + 65; // Имя диска
 			disks[countDisk] = new TCHAR[5]{ diskChar, ':', '\\', '\0' }; // Создание строки типа пути диска "X:\"
 
 			//получаем имя диска
@@ -143,13 +143,13 @@ void getDisks() {
 }
 
 // Установка шрифта
-void setFont(HWND hwnd, int size, int weight) {
+VOID setFont(HWND hwnd, DWORD size, DWORD weight) {
 	HFONT font = CreateFont(size, 0, 0, 0, weight, FALSE, FALSE, FALSE, ANSI_CHARSET,
 		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 	SendMessage(hwnd, WM_SETFONT, WPARAM(font), TRUE);
 }
 
-void init() {
+VOID init() {
 	//определение дисков
 	getDisks();
 
@@ -162,7 +162,7 @@ void init() {
 }
 
 // Отрисовка главного меню
-void drawMainWindow(HWND hwnd) {
+VOID drawMainWindow(HWND hwnd) {
 	//Диски
 	createText("Drive to test:", new ViewParam{ 10, 13, 90, 30 }, NULL, hwnd, FW_MEDIUM, 18);
 	cb_list_disks = createCombobox("Диски", new ViewParam{ 110, 10, 310, 400 }, disksNames, sizeof(disksNames) / sizeof(disksNames[0]), cb_list_disks_id, hwnd);
@@ -200,10 +200,10 @@ void drawMainWindow(HWND hwnd) {
 
 // Управление тестом
 DWORD parentThreadId; // id родительского потока который передается в тред
-void startTest(DWORD (*test)(LPVOID param)) {
+VOID startTest(DWORD (*test)(LPVOID param)) {
 
 	parentThreadId = GetCurrentThreadId(); // Получение текущего id потока который будет являться родительским для теста
-	workingThread = CreateThread(NULL, 0, writeTest, (LPVOID)&parentThreadId, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL); // Создание потока 
+	workingThread = CreateThread(NULL, 0, test, (LPVOID)&parentThreadId, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL); // Создание потока 
 
 	EnableWindow(btn_startWrite, false);
 	EnableWindow(btn_startRead, false);
@@ -211,7 +211,7 @@ void startTest(DWORD (*test)(LPVOID param)) {
 	ResumeThread(workingThread);
 }
 
-void pauseTest() {
+VOID pauseTest() {
 	Sleep(50);
 
 	// Обработка кнопки "Pause" и "Resume" соответственно, если поток остановлен - восстановить, иначе приостановить
@@ -227,7 +227,7 @@ void pauseTest() {
 	}
 }
 
-void stopTest() {
+VOID stopTest() {
 	EnableWindow(btn_startWrite, true);
 	EnableWindow(btn_startRead, true);
 	SetWindowText(btn_pause, "Pause");
@@ -238,13 +238,13 @@ void stopTest() {
 
 /////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
 
-void createBox(const TCHAR* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr) {
+VOID createBox(CONST TCHAR* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr) {
 	HWND box;
 	box = CreateWindow("Button", nameBtn, WS_CHILD | WS_VISIBLE | BS_GROUPBOX | atr, params->x - 20, params->y - 20, params->width + 20, params->height + 20, hwnd, NULL, NULL, NULL);
 	setFont(box, 16, FW_MEDIUM);
 }
 
-HWND createCombobox(const TCHAR* nameBox, ViewParam* params, const TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd) {
+HWND createCombobox(CONST TCHAR* nameBox, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd) {
 	HWND dropList;
 	dropList = CreateWindow("combobox", nameBox, WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 	for (DWORD i = 0; i < countValues; ++i)
@@ -254,14 +254,14 @@ HWND createCombobox(const TCHAR* nameBox, ViewParam* params, const TCHAR* values
 	return dropList;
 }
 
-HWND createButton(const TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd) {
+HWND createButton(CONST TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd) {
 	HWND btn;
 	btn = CreateWindow("button", nameBtn, WS_VISIBLE | WS_CHILD, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 	setFont(btn, 17, FW_BOLD);
 	return btn;
 }
 
-HWND createText(const TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, DWORD isBold, DWORD size) {
+HWND createText(CONST TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, DWORD isBold, DWORD size) {
 	HWND st;
 	st = CreateWindow("static", nameBtn, WS_VISIBLE | WS_CHILD | SS_CENTER | BS_VCENTER, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
 	setFont(st, size, isBold);
@@ -277,7 +277,7 @@ HWND createProgressBar(ViewParam* params, DWORD id, HWND& hwnd) {
 	return pb;
 }
 
-HWND* createRadiobtnGroup(const TCHAR* nameBtn, ViewParam* params, const TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd) {
+HWND* createRadiobtnGroup(CONST TCHAR* nameBtn, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd) {
 	HWND* btns = new HWND[countValues];
 	DWORD y = params->y;
 	for (DWORD i = 0; i < countValues; ++i) {

@@ -18,12 +18,17 @@ struct Config {
     DWORD bufferSize;
     DWORD mode;
     DWORD32 fileSize;
-    const TCHAR* disk;
+	CONST TCHAR* disk;
     DWORD countTests;
 };
 extern Config userConfig;
 
-DWORD WINAPI writeTest(LPVOID param); // Тест на запись
-DWORD WINAPI readTest(LPVOID param); // Тест на чтение
-int getModeFromType(const char* type);
+DWORD WINAPI writeTest(LPVOID); // Тест на запись
+DWORD WINAPI readTest(LPVOID); // Тест на чтение
+DWORD getModeFromType(CONST TCHAR*);
+RESULT writeToFile(HANDLE, DWORD);
+RESULT readFromFile(HANDLE, DWORD, DWORD);
+VOID ExitTestThread(HANDLE&);
+VOID SaveResults(DOUBLE*, DWORD, TCHAR[]);
+VOID createTestFile(TCHAR[]);
 
