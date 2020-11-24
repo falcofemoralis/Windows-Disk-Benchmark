@@ -17,13 +17,17 @@ using namespace std;
 struct Config {
     DWORD bufferSize;
     DWORD mode;
-    DWORD32 fileSize;
+    DWORD fileSize;
     const TCHAR* disk;
     DWORD countTests;
 };
 extern Config userConfig;
 
-DWORD WINAPI writeTest(LPVOID param); // Тест на запись
-DWORD WINAPI readTest(LPVOID param); // Тест на чтение
-int getModeFromType(const char* type);
-
+DWORD WINAPI writeTest(LPVOID);
+RESULT writeToFile(HANDLE, DWORD, DWORD);
+DWORD WINAPI readTest(LPVOID);
+RESULT readFromFile(HANDLE, DWORD, DWORD);
+VOID ExitTestThread(HANDLE&);
+VOID SaveResults(DOUBLE*, DWORD, TCHAR[]);
+VOID createTestFile(TCHAR[]);
+DWORD getModeFromType(const TCHAR* type);

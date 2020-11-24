@@ -6,6 +6,7 @@
 #include <utility>
 #include <CommCtrl.h>
 #include "GUIMain.h"
+#include "benchmark.h"
 
 #define KB 1024
 #define MB KB*1024
@@ -15,25 +16,10 @@
 using namespace std;
 
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении 
-struct Config {
-    DWORD bufferSize;
-    DWORD mode;
-    DWORD fileSize;
-    const TCHAR* disk;
-    DWORD countTests;
-};
 Config userConfig;
 
 CONST DWORD BUFFER_SIZES[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB }; 
 CONST DWORD FILE_SIZS[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
-
-DWORD WINAPI writeTest(LPVOID);
-RESULT writeToFile(HANDLE, DWORD);
-DWORD WINAPI readTest(LPVOID);
-RESULT readFromFile(HANDLE, DWORD, DWORD);
-VOID ExitTestThread(HANDLE&);
-VOID SaveResults(DOUBLE*, DWORD, TCHAR[]);
-VOID createTestFile(TCHAR[]);
 
 VOID SaveResults(DOUBLE* arr, DWORD size, TCHAR lpFileName[]) {
     DWORD dwTemp;
@@ -100,7 +86,7 @@ DWORD WINAPI writeTest(LPVOID  param) {
     for (DWORD i = 0; i < userConfig.countTests; i++)
     {
         // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
-        RESULT test = writeToFile(writeFile, i);
+        RESULT test = writeToFile(writeFile, i, parentThreadId);
 
         //отслеживаем ошибки
         if (test.first == NULL) {
@@ -121,12 +107,13 @@ DWORD WINAPI writeTest(LPVOID  param) {
     _stprintf_s(str, _T("%.2lf"), res);
     _tcscat_s(str, _T(" МБ\\с"));
     Sleep(800);
+
     PostThreadMessage(parentThreadId, SEND_TEST_RESULT, 0, (LPARAM)str);
 
     ExitTestThread(writeFile);
 }
 
-RESULT writeToFile(HANDLE writeFile, DWORD countTest) {
+RESULT writeToFile(HANDLE writeFile, DWORD countTest, DWORD parentThreadId) {
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
     LARGE_INTEGER Frequency;
     BOOL bErrorFlag;
@@ -155,6 +142,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest) {
     //записываем в файл count раз массива данных
     for (int i = 0; i < iterations; ++i)
     {
+
         if (threadStatus == CANCELED)
             ExitTestThread(writeFile);
         
@@ -182,7 +170,8 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest) {
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
 
         //установка прогресса
-        SendMessage(pb_progress, PBM_SETPOS, ((100 * (i + 1) + curProgress) / allSteps), 0);
+        DWORD pbState = ((100 * (i + 1) + curProgress) / allSteps);
+        PostThreadMessage(parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)&pbState);
     }
 
     if (sumWritten != dwBytesToWrite)
@@ -311,7 +300,7 @@ DWORD WINAPI readTest(LPVOID param) {
     return 0;
 }
 
-RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest) {
+RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest, DWORD parentThreadId) {
 
     SetFilePointer(readFile,NULL, NULL, FILE_BEGIN);
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
@@ -363,7 +352,8 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest) {
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
 
         //установка прогресса
-        SendMessage(pb_progress, PBM_SETPOS, ((100 * (i + 1) + curProgress) / allSteps), 0);
+        DWORD pbState = ((100 * (i + 1) + curProgress) / allSteps);
+        PostThreadMessage(parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)&pbState);
     }
 
     //Проверяем, чтобы количество считанных байт было равно количеству, заявленному тестом

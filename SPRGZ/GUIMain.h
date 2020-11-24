@@ -31,6 +31,7 @@ extern DWORD threadStatus;
 
 // Сообщения между тредами
 #define SEND_TEST_RESULT WM_APP + 1
+#define SEND_PROGRESS_BAR_UPDATE WM_APP + 2
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
@@ -49,9 +50,12 @@ HWND* createRadiobtnGroup(const TCHAR* nameBtn, ViewParam* params, const TCHAR* 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+VOID OnCreate(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+VOID OnCommand(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 // Инициализация всех необходимых первоначальных данных
-void init();
-void drawMainWindow(HWND hwnd);
-void startTest(DWORD(*test)(LPVOID param));
+void initConfig();
+void startTest(DWORD(WINAPI* test)(LPVOID));
 void pauseTest();
 void stopTest();
+void setResult(TCHAR*);
