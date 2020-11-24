@@ -7,6 +7,6 @@
 #define WORKING 1
 #define CANCELED 0
 
-extern HWND pb_progress, text_read, text_write, btn_start;
+extern HWND pb_progress, text_read, text_write, btn_startWrite, btn_startRead;
 extern DWORD threadStatus;
 
