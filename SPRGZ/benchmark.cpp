@@ -19,7 +19,7 @@ struct Config {
     DWORD bufferSize;
     DWORD mode;
     DWORD fileSize;
-    const TCHAR* disk;
+    CONST TCHAR* disk;
     DWORD countTests;
 };
 Config userConfig;
@@ -132,7 +132,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest) {
     char* DataBuffer = new char[userConfig.bufferSize];
     TCHAR Data[] = _T("Vladyslav");
 
-    for (int i = 0; i < userConfig.bufferSize; i++)
+    for (INT i = 0; i < userConfig.bufferSize; i++)
         DataBuffer[i] = Data[i % 9];
 
     DOUBLE totalTime = 0;
@@ -150,7 +150,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest) {
     DOUBLE *buffersTimes = new DOUBLE[iterations];
 
     //записываем в файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (INT i = 0; i < iterations; ++i)
     {
         if (threadStatus == CANCELED)
             ExitTestThread(writeFile);
@@ -212,7 +212,7 @@ VOID createTestFile(TCHAR fullPath[]) {
     char* DataBuffer = new char[userConfig.bufferSize];
     TCHAR Data[] = _T("Vladyslav");
 
-    for (int i = 0; i < userConfig.bufferSize; i++)
+    for (INT i = 0; i < userConfig.bufferSize; i++)
         DataBuffer[i] = Data[i % 9];
 
     DWORD iterations = (DWORD)(userConfig.fileSize / userConfig.bufferSize) + 1;
@@ -222,7 +222,7 @@ VOID createTestFile(TCHAR fullPath[]) {
     DOUBLE* buffersTimes = new DOUBLE[iterations];
 
     //записываем в файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (INT i = 0; i < iterations; ++i)
     {
         bErrorFlag = WriteFile(
             testFile,
@@ -332,7 +332,7 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest) {
     DOUBLE* buffersTimes = new DOUBLE[iterations];
 
     //читаем файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (INT i = 0; i < iterations; ++i)
     {
         if (threadStatus == CANCELED)
             ExitTestThread(readFile);
@@ -377,13 +377,13 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest) {
 }
 
 // Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
-int getModeFromType(const char* type) {
-    if (!strcmp(type, "RANDOM_ACCESS"))
+INT getModeFromType(CONST TCHAR* type) {
+    if (!_tcscmp(type, "RANDOM_ACCESS"))
         return FILE_FLAG_RANDOM_ACCESS;
-    else if (!strcmp(type, "WRITE_THROUGH"))
+    else if (!_tcscmp(type, "WRITE_THROUGH"))
         return FILE_FLAG_WRITE_THROUGH;
-    else if (!strcmp(type, "SEQUENTIAL"))
+    else if (!_tcscmp(type, "SEQUENTIAL"))
         return FILE_FLAG_SEQUENTIAL_SCAN;
-    else if (!strcmp(type, "NO_BUFFERING"))
+    else if (!_tcscmp(type, "NO_BUFFERING"))
         return FILE_FLAG_NO_BUFFERING;
 }
