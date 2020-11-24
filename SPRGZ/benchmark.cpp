@@ -63,7 +63,10 @@ VOID ExitTestThread(HANDLE& handle) {
     return;
 }
 
-DWORD WINAPI writeTest(LPVOID param) {
+DWORD WINAPI writeTest(LPVOID  param) {
+
+    DWORD parentThreadId = *((DWORD*)param); // id родительского потока
+
     DOUBLE totalTime = 0, totalmb = 0;
 
     // Определение полного пути к файлу
@@ -118,8 +121,8 @@ DWORD WINAPI writeTest(LPVOID param) {
     _stprintf_s(str, _T("%.2lf"), res);
     _tcscat_s(str, _T(" МБ\\с"));
     Sleep(800);
-    SetWindowText(text_write, str);
-    
+    PostThreadMessage(parentThreadId, SEND_TEST_RESULT, 0, (LPARAM)str);
+
     ExitTestThread(writeFile);
 }
 
@@ -210,7 +213,7 @@ VOID createTestFile(TCHAR fullPath[]) {
 
     //тестовый массив данных
     char* DataBuffer = new char[userConfig.bufferSize];
-    TCHAR Data[] = _T("Vladyslav");
+    TCHAR Data[] = _T("NoName");
 
     for (int i = 0; i < userConfig.bufferSize; i++)
         DataBuffer[i] = Data[i % 9];
@@ -377,13 +380,11 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest) {
 }
 
 // Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
-int getModeFromType(const char* type) {
-    if (!strcmp(type, "RANDOM_ACCESS"))
+DWORD getModeFromType(const TCHAR* type) {
+    if (!_tcscmp(type, "RANDOM_ACCESS"))
         return FILE_FLAG_RANDOM_ACCESS;
-    else if (!strcmp(type, "WRITE_THROUGH"))
+    else if (!_tcscmp(type, "WRITE_THROUGH"))
         return FILE_FLAG_WRITE_THROUGH;
-    else if (!strcmp(type, "SEQUENTIAL"))
+    else if (!_tcscmp(type, "SEQUENTIAL"))
         return FILE_FLAG_SEQUENTIAL_SCAN;
-    else if (!strcmp(type, "NO_BUFFERING"))
-        return FILE_FLAG_NO_BUFFERING;
 }
