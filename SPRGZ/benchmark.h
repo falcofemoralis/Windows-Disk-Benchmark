@@ -11,23 +11,17 @@
 #define GB MB*1024
 #define RESULT pair <DWORD, DOUBLE>
 
+#define WRITE_TEST 50
+#define READ_TEST 51
+
+
 using namespace std;
 
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
-struct Config {
-    DWORD bufferSize;
-    DWORD mode;
-    DWORD32 fileSize;
-    CONST TCHAR* disk;
-    DWORD countTests;
-};
-extern Config userConfig;
 
-DWORD WINAPI writeTest(LPVOID); // Тест на запись
-DWORD WINAPI readTest(LPVOID); // Тест на чтение
+
+DWORD testDrive(LPVOID);
+RESULT testIteration(HANDLE, DWORD);
 DWORD getModeFromType(CONST TCHAR*);
-RESULT writeToFile(HANDLE, DWORD, DWORD);
-RESULT readFromFile(HANDLE, DWORD, DWORD, DWORD);
-VOID ExitTestThread(HANDLE&);
-VOID SaveResults(DOUBLE*, DWORD, TCHAR[]);
+VOID SaveResults(DOUBLE*, DWORD, DWORD);
 VOID createTestFile(TCHAR[]);

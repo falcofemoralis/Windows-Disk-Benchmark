@@ -33,6 +33,16 @@ extern DWORD threadStatus;
 #define SEND_TEST_RESULT WM_APP + 1
 #define SEND_PROGRESS_BAR_UPDATE WM_APP + 2
 
+struct Config {
+    DWORD bufferSize;
+    DWORD mode;
+    DWORD32 fileSize;
+    CONST TCHAR* disk;
+    DWORD countTests;
+    DWORD typeTest;
+    DWORD parentThreadId;
+};
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 /////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
@@ -55,7 +65,7 @@ VOID OnCommand(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Инициализация всех необходимых первоначальных данных
 VOID initConfig();
-VOID startTest(DWORD(WINAPI* test)(LPVOID));
+VOID startTest(DWORD);
 VOID pauseTest();
 VOID stopTest();
 VOID setResult(TCHAR*);

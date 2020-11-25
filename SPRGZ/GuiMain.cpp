@@ -25,6 +25,8 @@ DWORD mainThreadId; // ID основного потока
 HANDLE workingThread;
 DWORD threadStatus = CANCELED;
 
+Config userConfig;
+
 DWORD main() {
 	//инициализаци€ 
 	initConfig();
@@ -139,10 +141,10 @@ VOID OnCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 	// ”правление потоком тестировани€ (самим тестом)
 	if (HWND(lParam) == btn_startWrite)
-		startTest(writeTest);
+		startTest(WRITE_TEST);
 
 	if (HWND(lParam) == btn_startRead)
-		startTest(readTest);
+		startTest(READ_TEST);
 
 	if (HWND(lParam) == btn_pause)
 		pauseTest();
@@ -240,10 +242,11 @@ VOID drawMainWindow(HWND hwnd) {
 
 // ”правление тестом
 DWORD parentThreadId; // id родительского потока который передаетс€ в тред
-VOID startTest(DWORD(WINAPI* test)(LPVOID)) {
+VOID startTest(DWORD typeTest) {
+	userConfig.typeTest = typeTest;
+	userConfig.parentThreadId = GetCurrentThreadId(); // ѕолучение текущего id потока который будет €вл€тьс€ родительским дл€ теста
 
-	parentThreadId = GetCurrentThreadId(); // ѕолучение текущего id потока который будет €вл€тьс€ родительским дл€ теста
-	workingThread = CreateThread(NULL, 0, test, (LPVOID)&parentThreadId, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL); // —оздание потока 
+	workingThread = CreateThread(NULL, 0, testDrive, (LPVOID)&userConfig, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL); // —оздание потока 
 
 	EnableWindow(btn_startWrite, false);
 	EnableWindow(btn_startRead, false);
@@ -275,8 +278,13 @@ VOID stopTest() {
 	ResumeThread(workingThread); // «авершаем поток естественным образом
 }
 
+// ”становка результатов 
 void setResult(TCHAR* res) {
-	SetWindowText(text_write, res);
+	if (userConfig.typeTest == WRITE_TEST)
+		SetWindowText(text_write, res);
+	else 
+		SetWindowText(text_read, res);
+
 	SendMessage(pb_progress, PBM_SETPOS, 0, 0);
 	EnableWindow(btn_startWrite, true);
 	EnableWindow(btn_startRead, true);
