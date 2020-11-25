@@ -41,12 +41,12 @@ struct ViewParam {
 	DWORD x, y;
 	DWORD width, height;
 };
-void createBox(const TCHAR* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr);
-HWND createCombobox(const TCHAR* nameBox, ViewParam* params, const TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
-HWND createButton(const TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd);
-HWND createText(const TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, DWORD isBold, DWORD size);
+VOID createBox(CONST TCHAR* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr);
+HWND createCombobox(CONST TCHAR* nameBox, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
+HWND createButton(CONST TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd);
+HWND createText(CONST TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, DWORD isBold, DWORD size);
 HWND createProgressBar(ViewParam* params, DWORD id, HWND& hwnd);
-HWND* createRadiobtnGroup(const TCHAR* nameBtn, ViewParam* params, const TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
+HWND* createRadiobtnGroup(CONST TCHAR* nameBtn, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -54,8 +54,8 @@ VOID OnCreate(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 VOID OnCommand(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Инициализация всех необходимых первоначальных данных
-void initConfig();
-void startTest(DWORD(WINAPI* test)(LPVOID));
-void pauseTest();
-void stopTest();
-void setResult(TCHAR*);
+VOID initConfig();
+VOID startTest(DWORD(WINAPI* test)(LPVOID));
+VOID pauseTest();
+VOID stopTest();
+VOID setResult(TCHAR*);

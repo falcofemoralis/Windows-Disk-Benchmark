@@ -119,11 +119,12 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest, DWORD parentThreadId) {
     BOOL bErrorFlag;
 
     //тестовый массив данных
-    char* DataBuffer = new char[userConfig.bufferSize];
-    TCHAR Data[] = _T("Vladyslav");
+	TCHAR* DataBuffer = new TCHAR[userConfig.bufferSize];
+    TCHAR Data[] = _T("NoName");
+    DWORD nameDivider = sizeof(Data) / sizeof(Data[0]);
+    for (DWORD i = 0; i < userConfig.bufferSize; i++)
+        DataBuffer[i] = Data[i % nameDivider];
 
-    for (int i = 0; i < userConfig.bufferSize; i++)
-        DataBuffer[i] = Data[i % 9];
 
     DOUBLE totalTime = 0;
     DWORD iterations = (DWORD) (userConfig.fileSize / userConfig.bufferSize) + 1;
@@ -140,9 +141,8 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest, DWORD parentThreadId) {
     DOUBLE *buffersTimes = new DOUBLE[iterations];
 
     //записываем в файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (DWORD i = 0; i < iterations; ++i)
     {
-
         if (threadStatus == CANCELED)
             ExitTestThread(writeFile);
         
@@ -154,6 +154,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest, DWORD parentThreadId) {
             userConfig.bufferSize,
             &dwBytesWritten,
             NULL);
+        test(WriteFile);
 
         QueryPerformanceCounter(&EndingTime);
 
@@ -187,6 +188,7 @@ RESULT writeToFile(HANDLE writeFile, DWORD countTest, DWORD parentThreadId) {
 }
 
 
+
 VOID createTestFile(TCHAR fullPath[]) {
     //создаем файл "test.bin", после закрытия хендла файл будет удален
     HANDLE testFile = CreateFile(fullPath,
@@ -201,10 +203,10 @@ VOID createTestFile(TCHAR fullPath[]) {
     BOOL bErrorFlag;
 
     //тестовый массив данных
-    char* DataBuffer = new char[userConfig.bufferSize];
+	TCHAR* DataBuffer = new TCHAR[userConfig.bufferSize];
     TCHAR Data[] = _T("NoName");
 
-    for (int i = 0; i < userConfig.bufferSize; i++)
+    for (DWORD i = 0; i < userConfig.bufferSize; i++)
         DataBuffer[i] = Data[i % 9];
 
     DWORD iterations = (DWORD)(userConfig.fileSize / userConfig.bufferSize) + 1;
@@ -214,7 +216,7 @@ VOID createTestFile(TCHAR fullPath[]) {
     DOUBLE* buffersTimes = new DOUBLE[iterations];
 
     //записываем в файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (DWORD i = 0; i < iterations; ++i)
     {
         bErrorFlag = WriteFile(
             testFile,
@@ -273,7 +275,7 @@ DWORD WINAPI readTest(LPVOID param) {
     for (DWORD i = 0; i < userConfig.countTests; i++)
     {
         // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
-        RESULT test = readFromFile(readFile, userConfig.bufferSize, i);
+        RESULT test = readFromFile(readFile, userConfig.bufferSize, i, 0);
 
         //отслеживаем ошибки
         if (test.first == NULL) {
@@ -307,7 +309,7 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest, DWORD p
     LARGE_INTEGER Frequency;
     BOOL bErrorFlag=1;
 
-    char* DataBuffer = new char[buffer_size];
+	TCHAR* DataBuffer = new TCHAR[buffer_size];
 
     DOUBLE totalTime = 0;
     DWORD iterations = userConfig.fileSize / buffer_size;
@@ -324,7 +326,7 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest, DWORD p
     DOUBLE* buffersTimes = new DOUBLE[iterations];
 
     //читаем файл count раз массива данных
-    for (int i = 0; i < iterations; ++i)
+    for (DWORD i = 0; i < iterations; ++i)
     {
         if (threadStatus == CANCELED)
             ExitTestThread(readFile);
@@ -370,7 +372,7 @@ RESULT readFromFile(HANDLE readFile, DWORD buffer_size, DWORD countTest, DWORD p
 }
 
 // Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
-DWORD getModeFromType(const TCHAR* type) {
+DWORD getModeFromType(CONST TCHAR* type) {
     if (!_tcscmp(type, "RANDOM_ACCESS"))
         return FILE_FLAG_RANDOM_ACCESS;
     else if (!_tcscmp(type, "WRITE_THROUGH"))
