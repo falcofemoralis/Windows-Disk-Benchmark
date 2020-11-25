@@ -41,15 +41,6 @@ DWORD WINAPI testDrive(LPVOID  param) {
         typeOpen = CREATE_ALWAYS;
     }
 
-
-    // ДЕБАГ
-    _tprintf(_T("Testing %s with buffer size %d kb, file size %d kb, mode %d, countsTests %d\n"),
-        fullPath,
-        testConfig.bufferSize / 1024,
-        testConfig.fileSize / 1024,
-        testConfig.mode,
-        testConfig.countTests);
-
     for (DWORD i = 0; i < testConfig.countTests; i++)
     {
         file = CreateFile(fullPath,
@@ -65,6 +56,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
         if (file == INVALID_HANDLE_VALUE) {
             _tprintf(_T("Terminal failure: Unable to create file for write with error code %d.\n"), GetLastError());
             CloseHandle(file);
+            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new int(0));
             return NULL;
         }
 
@@ -75,6 +67,8 @@ DWORD WINAPI testDrive(LPVOID  param) {
         if (test.first == NULL) {
             _tprintf(_T("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
             CloseHandle(file);
+            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new int(0));
+            DeleteFile(fullPath);
             return -1;
         }
 
@@ -128,7 +122,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
     DWORD allSteps = iterations * testConfig.countTests;
 
     DOUBLE* buffersTimes = new DOUBLE[iterations];
-
+    DWORD pbStateCurrent, pbStateLast = 0; // Состояния прогресс бара
     //записываем в файл count раз массива данных
     for (DWORD i = 0; i < iterations; ++i)
     {
@@ -165,14 +159,17 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         ElapsedMicroseconds.QuadPart *= 1000000;
         ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
 
-        //Пока что вывод итераций в консоль
+        //Пока что вывод итераций в консоль 
         buffersTimes[i] = ElapsedMicroseconds.QuadPart / (double)1000000;
         sumBytesProcess += dwBytesProcess;
         totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
 
-        //установка прогресса
-        DWORD pbState = ((100 * (i + 1) + curProgress) / allSteps);
-        PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)&pbState);
+        //установка прогресса - если текущий процент прогресса (целое число) изменился по сравнению с прошлым - происходит изменение прогресс бара
+        pbStateCurrent = ((100 * (i + 1) + curProgress) / allSteps);
+        if (pbStateCurrent > pbStateLast) {
+            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)&pbStateCurrent);
+            pbStateLast = pbStateCurrent; // Текущее состояние для дальнейшей операции становится прошлым
+        }
     }
 
     // Если количество обработаных байт не совпадает с необходимым - возникла ошибка
@@ -201,7 +198,7 @@ VOID SaveResults(DOUBLE* arr, DWORD size, DWORD iteration) {
     if (INVALID_HANDLE_VALUE == hFile) return;
 
     DWORD delta = 0;
-    for (DWORD i = 0; i < size; i++)
+    for (DWORD i = 1; i <= size; i++)
     {
         DWORD sizeBuff = log10(i) + 11; // 11 символов на число с плавающей запятой и перенос каретки
         TCHAR* buffer = new TCHAR[sizeBuff];
@@ -221,7 +218,6 @@ VOID createTestFile(TCHAR fullPath[]) {
         CREATE_ALWAYS,
         NULL,
         NULL);
-
 
     BOOL bErrorFlag;
 

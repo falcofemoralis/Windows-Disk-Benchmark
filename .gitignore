@@ -434,4 +434,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-.WriteTest0.txt
+/SPRGZ/*.txt
