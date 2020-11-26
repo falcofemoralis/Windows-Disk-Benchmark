@@ -159,7 +159,7 @@ VOID OnCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 			CheckDlgButton(hwnd, cb_buffering_id, BST_UNCHECKED);
 		else 
 			CheckDlgButton(hwnd, cb_buffering_id, BST_CHECKED);
-		userConfig.isBuffering = checked;
+		userConfig.isBuffering = !checked;
 	}
 }
 
