@@ -23,5 +23,6 @@ using namespace std;
 DWORD testDrive(LPVOID);
 RESULT testIteration(HANDLE, DWORD);
 DWORD getModeFromType(CONST TCHAR*);
-VOID SaveResults(DOUBLE*, DWORD, DWORD);
 VOID createTestFile(TCHAR[]);
+VOID saveResultsGraph(DOUBLE*, DWORD, TCHAR*);
+VOID saveResultsOfHistogram(DWORD*, DWORD, TCHAR*);

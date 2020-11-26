@@ -25,6 +25,7 @@ extern DWORD threadStatus;
 #define cb_list_buffers_id ID_CB + 2
 #define cb_list_testCounts_id ID_CB + 3
 #define cb_list_modes_id ID_CB + 4
+#define cb_buffering_id ID_CB + 5
 #define text_read_id ID_TEXT
 #define text_write_id ID_TEXT + 1	
 
@@ -41,6 +42,7 @@ struct Config {
     DWORD countTests;
     DWORD typeTest;
     DWORD parentThreadId;
+    BOOL isBuffering;
 };
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
@@ -57,6 +59,7 @@ HWND createButton(CONST TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd)
 HWND createText(CONST TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, DWORD isBold, DWORD size);
 HWND createProgressBar(ViewParam* params, DWORD id, HWND& hwnd);
 HWND* createRadiobtnGroup(CONST TCHAR* nameBtn, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
+HWND createCheckBox(CONST TCHAR* text, ViewParam* params, DWORD id, HWND& hwnd);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
