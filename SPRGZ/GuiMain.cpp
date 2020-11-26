@@ -23,7 +23,9 @@ DWORD threadStatus = CANCELED;
 
 Config userConfig;
 
-DWORD main() {
+//DWORD main() {
+	INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow) {
+
 	//инициализация 
 	initConfig();
 

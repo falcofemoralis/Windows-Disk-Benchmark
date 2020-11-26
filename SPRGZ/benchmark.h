@@ -14,6 +14,7 @@
 #define WRITE_TEST 50
 #define READ_TEST 51
 
+CONST DWORD SIZE_OF_HISTOGRAM = 6;
 
 using namespace std;
 
@@ -26,3 +27,5 @@ DWORD getModeFromType(CONST TCHAR*);
 VOID createTestFile(TCHAR[]);
 VOID saveResultsGraph(DOUBLE*, DWORD, TCHAR*);
 VOID saveResultsOfHistogram(DWORD*, DWORD, TCHAR*);
+VOID GetFilledArray(TCHAR*);
+VOID filledBuffer(TCHAR*, DWORD);

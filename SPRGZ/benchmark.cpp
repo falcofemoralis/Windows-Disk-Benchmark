@@ -111,12 +111,8 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
 	TCHAR* DataBuffer = new TCHAR[testConfig.bufferSize];
 
 	// Если идет тест на запись - происходит заполнение буфера
-	if (testConfig.typeTest == WRITE_TEST) {
-		TCHAR Data[] = _T("NoName");
-		DWORD nameDivider = sizeof(Data) / sizeof(Data[0]) - 1;
-		for (DWORD i = 0; i < testConfig.bufferSize; i++)
-			DataBuffer[i] = Data[i % nameDivider];
-	}
+	if (testConfig.typeTest == WRITE_TEST)
+		filledBuffer(DataBuffer, testConfig.bufferSize);
 
 	DOUBLE totalTime = 0;
 	DWORD iterations = (DWORD)(testConfig.fileSize / testConfig.bufferSize) + 1;
@@ -132,8 +128,8 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
 
 	// Для гистограмы
 	DOUBLE baseTime = 0.001;
-	DWORD sizeOfHistogram = 6, counter = 0;
-	DWORD* iterationsPerTime = new DWORD[sizeOfHistogram];
+	DWORD counter = 0;
+	DWORD* iterationsPerTime = new DWORD[SIZE_OF_HISTOGRAM];
 
 	DOUBLE* buffersTimes = new DOUBLE[iterations];
 	DWORD pbStateCurrent, pbStateLast = 0; // Состояния прогресс бара
@@ -183,7 +179,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
 		totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
 
 		// Запись времени для гистограмы
-		if (counter < sizeOfHistogram && totalTime > baseTime) {
+		if (counter < SIZE_OF_HISTOGRAM && totalTime > baseTime) {
 			iterationsPerTime[counter] = i + 1;
 			baseTime *= 10;
 			++counter;
@@ -197,13 +193,15 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
 		}
 	}
 
+	if (counter == SIZE_OF_HISTOGRAM - 1)
+		iterationsPerTime[counter] = iterations;
+
 	// Если количество обработаных байт не совпадает с необходимым - возникла ошибка
 	if (sumBytesProcess != dwBytesToProcess)
 	{
 		_tprintf(_T("Error: dwBytesWritten != dwBytesToWrite\n"));
 		return make_pair(NULL, NULL);
 	}
-
 
 	TCHAR fileName[30];
 	if (testConfig.typeTest == WRITE_TEST)
@@ -227,19 +225,17 @@ VOID createTestFile(TCHAR fileName[]) {
 		0,
 		NULL,
 		CREATE_ALWAYS,
-		NULL,
+		testConfig.mode,
 		NULL);
 
 	//тестовый массив данных
-	TCHAR* DataBuffer = new TCHAR[testConfig.bufferSize];
-	TCHAR Data[] = _T("NoName");
-	DWORD divider = sizeof(Data) / sizeof(Data[0]);
-	for (DWORD i = 0; i < testConfig.bufferSize; i++)
-		DataBuffer[i] = Data[i % divider];
+	DWORD bufferSize = 32 * MB;
+	TCHAR* DataBuffer = new TCHAR[bufferSize];
+	filledBuffer(DataBuffer, bufferSize);
 
 	// Переменные для тестирования
-	DWORD iterations = (DWORD)(testConfig.fileSize / testConfig.bufferSize) + 1;
-	DWORD dwBytesToWrite = testConfig.bufferSize * iterations;
+	DWORD iterations = (DWORD)(testConfig.fileSize / bufferSize) + 1;
+	DWORD dwBytesToWrite = bufferSize * iterations;
 	DWORD dwBytesWritten = 0, sumWritten = 0;
 
 	//записываем в файл count раз массива данных
@@ -249,14 +245,13 @@ VOID createTestFile(TCHAR fileName[]) {
 		bErrorFlag = WriteFile(
 			testFile,
 			DataBuffer,
-			testConfig.bufferSize,
+			bufferSize,
 			&dwBytesWritten,
 			NULL);
 		if (bErrorFlag == FALSE) return;
 
 		sumWritten += dwBytesWritten;
 	}
-
 
 	if (sumWritten != dwBytesToWrite)
 	{
@@ -290,6 +285,7 @@ VOID saveResultsGraph(DOUBLE* data, DWORD size, TCHAR* fileName) {
 		TCHAR* buffer = new TCHAR[sizeBuff];
 		sprintf(buffer, "%d;%1.6lf\n", i, data[i - 1]);
 		WriteFile(hFile, buffer, sizeBuff * sizeof(TCHAR), &dwTemp, NULL);
+		delete[] buffer;
 	}
 
 	CloseHandle(hFile);
@@ -302,7 +298,7 @@ VOID saveResultsGraph(DOUBLE* data, DWORD size, TCHAR* fileName) {
 * fileName - имя файла
 */
 VOID saveResultsOfHistogram(DWORD* data, DWORD size, TCHAR* fileName) {
-	CONST TCHAR* interval[6] = { "1 мс", "10 мс", "100 мс", "1 с" , "10 с", ">10 c" };
+	CONST TCHAR* interval[SIZE_OF_HISTOGRAM] = { "1 мс", "10 мс", "100 мс", "1 с" , "10 с", ">10 c" };
 	TCHAR* newFileName = new TCHAR[100];
 	_tcscpy(newFileName, fileName);
 	_tcscat(newFileName, "_Histo.csv\0");
@@ -320,9 +316,18 @@ VOID saveResultsOfHistogram(DWORD* data, DWORD size, TCHAR* fileName) {
 		TCHAR* buffer = new TCHAR[digits];
 		sprintf(buffer, "%s;%d\n", interval[i - 1], data[i - 1]);
 		WriteFile(hFile, buffer, digits * sizeof(TCHAR), &dwTemp, NULL);
+		delete[] buffer;
 	}
 
 	CloseHandle(hFile);
+}
+
+VOID filledBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
+	//тестовый массив данных
+	TCHAR Data[] = _T("0x10");
+	DWORD divider = sizeof(Data) / sizeof(Data[0]) - 1;
+	for (DWORD i = 0; i < sizeBuffer; i++)
+		dataBuffer[i] = Data[i % divider];
 }
 
 // Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
