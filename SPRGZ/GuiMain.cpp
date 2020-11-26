@@ -14,7 +14,7 @@ CONST TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
 unsigned int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
-HWND btn_stop, btn_pause, btn_startRead, btn_startWrite, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, text_read, text_write, pb_progress;
+HWND btn_stop, btn_pause, btn_startRead, btn_startWrite, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, cb_buffering, text_read, text_write, pb_progress;
 HWND *rb_group_modes;
 
 DWORD mainThreadId; // ID основного потока
@@ -45,12 +45,12 @@ DWORD main() {
 
 		switch (msg.message)
 		{
-		case SEND_TEST_RESULT:
+		case SEND_TEST_RESULT: // Установка результата
 			TCHAR* res;
 			res = (TCHAR*)msg.lParam;
 			setResult(res);
 			break;
-		case SEND_PROGRESS_BAR_UPDATE:
+		case SEND_PROGRESS_BAR_UPDATE: // Обновление прогресс бара
 			DWORD state;
 			state = *((DWORD*)msg.lParam);
 			SendMessage(pb_progress, PBM_SETPOS, state, 0);
@@ -101,11 +101,16 @@ VOID OnCreate(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	createBox("Modes", new ViewParam{ 300, 130, 120, 120 }, hwnd, BS_CENTER);
 	rb_group_modes = createRadiobtnGroup("Modes buttons", new ViewParam{ 285, 140, 125, 20 }, modes, sizeof(modes) / sizeof(modes[0]), NULL, hwnd);
 
+	// Чекбокс буферизации
+	cb_buffering = createCheckBox("BUFFERING", new ViewParam{ 285, 220, 125, 20 }, cb_buffering_id, hwnd);
+
 	//кнопки управления
 	btn_startRead = createButton("Read test", new ViewParam{ 165, 210, 80, 25 }, btn_startRead_id, hwnd);
 	btn_startWrite = createButton("Write test", new ViewParam{ 35, 210, 80, 25 }, btn_startWrite_id, hwnd);
 	btn_pause = createButton("Pause", new ViewParam{ 90, 260, 120, 30 }, btn_pause_id, hwnd);
 	btn_stop = createButton("Stop", new ViewParam{ 230, 260, 120, 30 }, btn_stop_id, hwnd);
+
+
 
 	//прогресс бар
 	pb_progress = createProgressBar(new ViewParam{ 10, 300, 410, 30 }, NULL, hwnd);
@@ -148,6 +153,14 @@ VOID OnCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	if (HWND(lParam) == btn_stop)
 		stopTest();
 
+	if (HWND(lParam) == cb_buffering) {
+		BOOL checked = IsDlgButtonChecked(hwnd, cb_buffering_id);
+		if (checked) 
+			CheckDlgButton(hwnd, cb_buffering_id, BST_UNCHECKED);
+		else 
+			CheckDlgButton(hwnd, cb_buffering_id, BST_CHECKED);
+		userConfig.isBuffering = checked;
+	}
 }
 
 VOID getDisks() {
@@ -198,44 +211,6 @@ VOID initConfig() {
 	userConfig.mode = getModeFromType(modes[0]);
 	userConfig.disk = disks[0];
 }
-
-// Отрисовка главного меню
-VOID drawMainWindow(HWND hwnd) {
-	//Диски
-	createText("Drive to test:", new ViewParam{ 10, 13, 90, 30 }, NULL, hwnd, FW_MEDIUM, 18);
-	cb_list_disks = createCombobox("Диски", new ViewParam{ 110, 10, 310, 400 }, disksNames, sizeof(disksNames) / sizeof(disksNames[0]), cb_list_disks_id, hwnd);
-
-	//Ряд настроек размеров
-	createBox("File size", new ViewParam{ 30, 60, 80, 40 }, hwnd, NULL);
-	cb_list_files = createCombobox("Размер файла", new ViewParam{ 20, 60, 80, 500 }, fileNames, sizeof(fileNames) / sizeof(fileNames[0]), cb_list_files_id, hwnd);
-
-	createBox("Buffer size", new ViewParam{ 190, 60, 80, 40 }, hwnd, NULL);
-	cb_list_buffers = createCombobox("Размер буфера", new ViewParam{ 180, 60, 80, 500 }, buffNames, sizeof(buffNames) / sizeof(buffNames[0]), cb_list_buffers_id, hwnd);
-
-	createBox("Passes", new ViewParam{ 340, 60, 80, 40 }, hwnd, NULL);
-	cb_list_testCounts = createCombobox("Кол-во тестов", new ViewParam{ 330, 60, 80, 500 }, testCounts, sizeof(testCounts) / sizeof(testCounts[0]), cb_list_testCounts_id, hwnd);
-
-	//Блок результатов
-	createBox("Test results", new ViewParam{ 30, 130, 240, 120 }, hwnd, BS_CENTER);
-	createBox("Write", new ViewParam{ 40, 150, 95, 90 }, hwnd, BS_CENTER);
-	text_write = createText("0 MB\\c", new ViewParam{ 25, 180, 105, 20 }, text_write_id, hwnd, FW_MEDIUM, 16);
-	createBox("Read", new ViewParam{ 165, 150, 95, 90 }, hwnd, BS_CENTER);
-	text_read = createText("0 MB\\c", new ViewParam{ 155, 180, 100, 20 }, text_read_id, hwnd, FW_MEDIUM, 16);
-
-	//Блок режимов
-	createBox("Modes", new ViewParam{ 300, 130, 120, 120 }, hwnd, BS_CENTER);
-	rb_group_modes = createRadiobtnGroup("Modes buttons", new ViewParam{ 285, 140, 125, 20 }, modes, sizeof(modes) / sizeof(modes[0]), NULL, hwnd);
-
-	//кнопки управления
-	btn_startRead = createButton("Read test", new ViewParam{ 165, 210, 80, 25 }, btn_startRead_id, hwnd);
-	btn_startWrite = createButton("Write test", new ViewParam{ 35, 210, 80, 25 }, btn_startWrite_id, hwnd);
-	btn_pause = createButton("Pause", new ViewParam{ 90, 260, 120, 30 }, btn_pause_id, hwnd);
-	btn_stop = createButton("Stop", new ViewParam{ 230, 260, 120, 30 }, btn_stop_id, hwnd);
-
-	//прогресс бар
-	pb_progress = createProgressBar(new ViewParam{ 10, 300, 410, 30 }, NULL, hwnd);
-}
-
 // Управление тестом
 DWORD parentThreadId; // id родительского потока который передается в тред
 VOID startTest(DWORD typeTest) {
@@ -257,7 +232,6 @@ VOID pauseTest() {
 	if (threadStatus != PAUSE) {
 		threadStatus = PAUSE;
 		SetWindowText(btn_pause, "Resume");
-		SuspendThread(workingThread);
 	}
 	else {
 		threadStatus = WORKING;
@@ -339,6 +313,13 @@ HWND* createRadiobtnGroup(CONST TCHAR* nameBtn, ViewParam* params, CONST TCHAR* 
 	SendMessage(btns[0], BM_SETCHECK, BST_CHECKED, 0);
 
 	return btns;
+}
+
+HWND createCheckBox(CONST TCHAR* text, ViewParam* params, DWORD id, HWND& hwnd) {
+	HWND btn;
+	btn = CreateWindow("button", text, WS_VISIBLE | WS_CHILD | BS_CHECKBOX, params->x, params->y, params->width, params->height, hwnd, (HMENU)id, NULL, NULL);
+	setFont(btn, 15, FW_MEDIUM);
+	return btn;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
