@@ -12,7 +12,7 @@ CONST TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 
 // Константы значений для юзер конфига
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 4 * MB, 8 * MB, 16 * MB };
-unsigned int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
+UINT32 fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
 HWND btn_stop, btn_pause, btn_startRead, btn_startWrite, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, cb_buffering, text_read, text_write, pb_progress;
 HWND *rb_group_modes;
@@ -32,7 +32,7 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 
 	memset(&wcl, 0, sizeof(WNDCLASS));
 	wcl.lpszClassName = "my window";
-	wcl.lpfnWndProc = WndProc;
+	wcl.lpfnWndProc = wndProc;
 	wcl.hbrBackground = (HBRUSH)(CreateSolidBrush(RGB(243, 243, 243)));
 	RegisterClass(&wcl);
 
@@ -63,19 +63,19 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 	return 0;
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
+LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 {
 	switch (message)
 	{
-	case WM_CREATE: OnCreate(hwnd, message, wParam, lParam); break;
-	case WM_COMMAND: OnCommand(hwnd, message, wParam, lParam); break;
+	case WM_CREATE: onCreate(hwnd, message, wParam, lParam); break;
+	case WM_COMMAND: onCommand(hwnd, message, wParam, lParam); break;
 	case WM_DESTROY: PostQuitMessage(0); break;
 	}
 
-	return DefWindowProcA(hwnd, message, wParam, lParam);
+	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
-VOID OnCreate(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+VOID onCreate(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	//Диски
 	createText("Drive to test:", new ViewParam{ 10, 13, 90, 30 }, NULL, hwnd, FW_MEDIUM, 18);
 	cb_list_disks = createCombobox("Диски", new ViewParam{ 110, 10, 310, 400 }, disksNames, sizeof(disksNames) / sizeof(disksNames[0]), cb_list_disks_id, hwnd);
@@ -110,13 +110,11 @@ VOID OnCreate(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	btn_pause = createButton("Pause", new ViewParam{ 90, 260, 120, 30 }, btn_pause_id, hwnd);
 	btn_stop = createButton("Stop", new ViewParam{ 230, 260, 120, 30 }, btn_stop_id, hwnd);
 
-
-
 	//прогресс бар
 	pb_progress = createProgressBar(new ViewParam{ 10, 300, 410, 30 }, NULL, hwnd);
 }
 
-VOID OnCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+VOID onCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	// Если wParam = CBN_SELCHANGE, значит было выбрано одно из полей выпадающего списка
 	if (HIWORD(wParam) == CBN_SELCHANGE) {
 		DWORD selectedId;
@@ -135,9 +133,8 @@ VOID OnCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	//нажата одна из radio button
 	if (HIWORD(wParam) == BN_CLICKED) {
 		for (DWORD i = 0; i < sizeof(modes) / sizeof(modes[0]); ++i)
-			if (HWND(lParam) == rb_group_modes[i]) {
-				userConfig.mode = getModeFromType(modes[i]);
-			}
+			if (HWND(lParam) == rb_group_modes[i])
+				userConfig.mode = modes[i];
 	}
 
 	// Управление потоком тестирования (самим тестом)
@@ -171,7 +168,7 @@ VOID getDisks() {
 
 	for (DWORD i = 0; i < 26; i++)
 	{
-		bool isFound = ((dr >> i) & 0x00000001); // Все диски представляются битовой маской, если бит 0 установлен в единицу, значит существует диск А и так далее по алфавиту
+		BOOL isFound = ((dr >> i) & 0x00000001); // Все диски представляются битовой маской, если бит 0 установлен в единицу, значит существует диск А и так далее по алфавиту
 		if (isFound) {
 			//получем букву диска
 			TCHAR diskChar = i + 65; // Имя диска
@@ -183,8 +180,10 @@ VOID getDisks() {
 
 			//создаем название из буквы диска и имени диска, если у диска нету названия, даем имя Local Disk
 			TCHAR* name = new TCHAR[MAX_PATH + 5]{ '(', diskChar, ':', ')', ' ' };
-			if (_tcslen(VolumeName) == 0) _tcscat_s(name, MAX_PATH + 5, _T("Local Disk"));
-			else _tcscat_s(name, MAX_PATH + 5, VolumeName);
+			if (_tcslen(VolumeName) == 0)
+				_tcscat_s(name, MAX_PATH + 5, _T("Local Disk"));
+			else 
+				_tcscat_s(name, MAX_PATH + 5, VolumeName);
 
 			disksNames[countDisk] = name;
 			++countDisk;
@@ -208,7 +207,7 @@ VOID initConfig() {
 	userConfig.bufferSize = buffSizes[0];
 	userConfig.countTests = 1;
 	userConfig.fileSize = fileSizes[0];
-	userConfig.mode = getModeFromType(modes[0]);
+	userConfig.mode = modes[0];
 	userConfig.disk = disks[0];
 	userConfig.isBuffering = FALSE;
 }
@@ -220,8 +219,8 @@ VOID startTest(DWORD typeTest) {
 
 	workingThread = CreateThread(NULL, 0, testDrive, (LPVOID)&userConfig, CREATE_SUSPENDED | THREAD_SUSPEND_RESUME, NULL); // Создание потока 
 
-	EnableWindow(btn_startWrite, false);
-	EnableWindow(btn_startRead, false);
+	EnableWindow(btn_startWrite, FALSE);
+	EnableWindow(btn_startRead, FALSE);
 	threadStatus = WORKING;
 	ResumeThread(workingThread);
 }
@@ -250,7 +249,7 @@ VOID stopTest() {
 }
 
 // Установка результатов 
-void setResult(TCHAR* res) {
+VOID setResult(TCHAR* res) {
 	if (userConfig.typeTest == WRITE_TEST)
 		SetWindowText(text_write, res);
 	else 

@@ -1,20 +1,8 @@
-﻿#include <windows.h>
-#include <tchar.h>
-#include <string.h>
-#include <stdio.h>
-#include <strsafe.h>
-#include <utility>
-#include <CommCtrl.h>
-#include <math.h>
-#include "GUIMain.h"
+﻿#include "GUIMain.h"
 #include "benchmark.h"
-
-using namespace std;
 
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении 
 Config testConfig;
-
-CONST TCHAR* saveResultsTypes[2] = { "Graph", "Histogram" };
 
 /* Тестирования, открывается в отдельном потоке
 * Параметры:
@@ -32,7 +20,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
 
     // Создание хедлера на файл в зависимости от типа теста
     HANDLE file;
-    DWORD typeAccess, typeOpen, bufferFlag;
+    DWORD typeAccess, typeOpen, bufferFlag, modeFlag;
 
     if (testConfig.typeTest == READ_TEST) {
         createTestFile(fullPath);
@@ -45,15 +33,15 @@ DWORD WINAPI testDrive(LPVOID  param) {
     }
 
     bufferFlag = testConfig.isBuffering ? NULL : FILE_FLAG_NO_BUFFERING;
+    modeFlag = getModeFromType(testConfig.mode);
 
-    for (DWORD i = 0; i < testConfig.countTests; i++)
-    {
+    for (DWORD i = 0; i < testConfig.countTests; i++) {
         file = CreateFile(fullPath,
             typeAccess,
             0,
             NULL,
             typeOpen,
-            testConfig.mode | bufferFlag,
+            modeFlag | bufferFlag,
             NULL);
 
 
@@ -114,8 +102,9 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
 
     // Если идет тест на запись - происходит заполнение буфера
     if (testConfig.typeTest == WRITE_TEST)
-        filledBuffer(DataBuffer, testConfig.bufferSize);
+        fillBuffer(DataBuffer, testConfig.bufferSize);
     
+    // Для подсчета времени и количества байт
     DOUBLE totalTime = 0;
     DWORD iterations = (DWORD)(testConfig.fileSize / testConfig.bufferSize) + 1;
     DWORD dwBytesToProcess = testConfig.bufferSize * iterations;
@@ -136,8 +125,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
     DOUBLE* buffersTimes = new DOUBLE[iterations];
     DWORD pbStateCurrent, pbStateLast = 0; // Состояния прогресс бара
     //записываем в файл count раз массива данных
-    for (DWORD i = 0; i < iterations; ++i)
-    {
+    for (DWORD i = 0; i < iterations; ++i) {
         if (threadStatus == CANCELED)
             return make_pair(NULL, NULL);
 
@@ -195,6 +183,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         }
     }
 
+    // Запись остатка
     if (counter == SIZE_OF_HISTOGRAM - 1)
         iterationsPerTime[counter] = iterations;
 
@@ -207,12 +196,14 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
 
     TCHAR fileName[30];
     if (testConfig.typeTest == WRITE_TEST)
-        sprintf(fileName, "%dKB__WriteTest%d", testConfig.bufferSize / 1024, iteration);
+        sprintf(fileName, "WriteTest%d", iteration);
     else
-        sprintf(fileName, "%dKB__ReadTest%d", testConfig.bufferSize / 1024, iteration);
+        sprintf(fileName, "ReadTest%d", iteration);
 
-    saveResultsGraph(buffersTimes, iterations, fileName);
-    saveResultsOfHistogram(iterationsPerTime, counter, fileName);
+    saveResults(buffersTimes, fileName, iterations, TYPE_GRAPH);
+
+    //saveResultsGraph(buffersTimes, iterations, fileName);
+    //saveResultsOfHistogram(iterationsPerTime, counter, fileName);
     return make_pair(sumBytesProcess, totalTime);
 }
 
@@ -220,20 +211,20 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
 * Параметры:
 * fileName - полный путь к файлу
 */
-VOID createTestFile(TCHAR fileName[]) {
+VOID createTestFile(TCHAR* fileName) {
     //создаем файл "test.bin", после закрытия хендла файл будет удален
     HANDLE testFile = CreateFile(fileName,
         GENERIC_WRITE,
         0,
         NULL,
         CREATE_ALWAYS,
-        testConfig.mode,
+        getModeFromType(testConfig.mode),
         NULL);
 
     //тестовый массив данных
     DWORD bufferSize = 32 * MB;
 	TCHAR* DataBuffer = new TCHAR[bufferSize];
-    filledBuffer(DataBuffer, bufferSize);
+    fillBuffer(DataBuffer, bufferSize);
 
     // Переменные для тестирования
     DWORD iterations = (DWORD)(testConfig.fileSize / bufferSize) + 1;
@@ -242,8 +233,7 @@ VOID createTestFile(TCHAR fileName[]) {
 
     //записываем в файл count раз массива данных
     BOOL bErrorFlag;
-    for (DWORD i = 0; i < iterations; ++i)
-    {
+    for (DWORD i = 0; i < iterations; ++i) {
         bErrorFlag = WriteFile(
             testFile,
             DataBuffer,
@@ -255,8 +245,7 @@ VOID createTestFile(TCHAR fileName[]) {
         sumWritten += dwBytesWritten;
     }
 
-    if (sumWritten != dwBytesToWrite)
-    {
+    if (sumWritten != dwBytesToWrite) {
         _tprintf(_T("Error: dwBytesWritten != dwBytesToWrite\n"));
         return;
     }      
@@ -270,28 +259,25 @@ VOID createTestFile(TCHAR fileName[]) {
 * size - размер массива
 * fileName - имя файла
 */
-VOID saveResults(DOUBLE* valuesArray, TCHAR lpFileName[], DWORD size, DWORD type) {
+VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
+    CONST TCHAR* saveResultsTypes[2] = { "Graph", "Histogram" };
     // Необходимые переменные
     DWORD dwTemp;
     TCHAR buffer[30];
+    TCHAR* newFileName = new TCHAR[70];
 
-    TCHAR* fileName = new TCHAR[40];
-    _tcscpy(fileName, lpFileName);
-    _tcscat(fileName, saveResultsTypes[type]);
-    _tcscat(fileName, ".csv\0");
+    sprintf(newFileName, "%dKB__%s_%s_%s.csv\0", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
 
     // Создаем файл, куда будут записанны значения
-    HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE hFile = CreateFile(newFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (INVALID_HANDLE_VALUE == hFile) return;
 
-    for (DWORD i = 1; i <= size; ++i)
-    {
-        switch (type)
-        {
-        case 0:
+    for (DWORD i = 1; i <= size; ++i) {
+        switch (type) {
+        case TYPE_GRAPH:
             sprintf(buffer, "%d;%.6lf\n\0", i, valuesArray[i - 1]);
             break;
-        case 1:
+        case TYPE_HISTOGRAM:
             //sprintf(buffer, "%s;%d\n\0", interval[i - 1], valuesArray[i - 1]);
             break;
         }
@@ -301,7 +287,12 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR lpFileName[], DWORD size, DWORD type
     CloseHandle(hFile);
 }
 
-VOID filledBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
+/* Заполнение буфера
+* Параметры:
+* dataBuffer - исходный массив буфера который будет заполнятся
+* sizeBuffer - размер буфера (массива)
+*/
+VOID fillBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
     //тестовый массив данных
     TCHAR Data[] = _T("0x10");
     DWORD divider = sizeof(Data) / sizeof(Data[0]) - 1;
@@ -309,7 +300,10 @@ VOID filledBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
         dataBuffer[i] = Data[i % divider];
 }
 
-// Преобразование строки в аргумент флага (Потому что в меню берется тектовое поле)
+/* Перевод строкового обозначения режима
+* Параметры:
+* type - сам строковый режим
+*/
 DWORD getModeFromType(CONST TCHAR* type) {
     if (!_tcscmp(type, "RANDOM_ACCESS"))
         return FILE_FLAG_RANDOM_ACCESS;
@@ -317,4 +311,10 @@ DWORD getModeFromType(CONST TCHAR* type) {
         return FILE_FLAG_WRITE_THROUGH;
     else if (!_tcscmp(type, "SEQUENTIAL"))
         return FILE_FLAG_SEQUENTIAL_SCAN;
+}
+
+// Функция аналог С++ для создания пары (опять же без шаблона)
+pair make_pair(DWORD first, DOUBLE second) {
+    pair newPair = { first, second };
+    return newPair;
 }

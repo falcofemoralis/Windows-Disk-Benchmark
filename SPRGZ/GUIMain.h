@@ -35,7 +35,7 @@ extern DWORD threadStatus;
 
 struct Config {
     DWORD bufferSize;
-    DWORD mode;
+    CONST TCHAR* mode;
     DWORD32 fileSize;
     CONST TCHAR* disk;
     DWORD countTests;
@@ -44,7 +44,7 @@ struct Config {
     BOOL isBuffering;
 };
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK wndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 /////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
 // Структура с параметрами view объектов: x,y - координаты объекта, width,height - размеры view
@@ -62,8 +62,8 @@ HWND createCheckBox(CONST TCHAR* text, ViewParam* params, DWORD id, HWND& hwnd);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VOID OnCreate(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-VOID OnCommand(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+VOID onCreate(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+VOID onCommand(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Инициализация всех необходимых первоначальных данных
 VOID initConfig();
