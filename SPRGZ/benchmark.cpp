@@ -275,7 +275,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     for (DWORD i = 1; i <= size; ++i) {
         switch (type) {
         case TYPE_GRAPH:
-            sprintf(buffer, "%d;%.6lf\n\0", i, valuesArray[i - 1]);
+            sprintf(buffer, "%d;%.6lf\n\0", i * testConfig.bufferSize, valuesArray[i - 1]);
             break;
         case TYPE_HISTOGRAM:
             //sprintf(buffer, "%s;%d\n\0", interval[i - 1], valuesArray[i - 1]);

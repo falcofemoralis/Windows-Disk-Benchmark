@@ -435,3 +435,5 @@ MigrationBackup/
 FodyWeavers.xsd
 
 /SPRGZ/*.txt
+/SPRGZ/*.csv
+
