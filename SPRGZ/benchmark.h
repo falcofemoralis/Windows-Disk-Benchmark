@@ -21,9 +21,6 @@ struct pair {
 	DWORD first;
 	DOUBLE second;
 };
-pair make_pair(DWORD, DOUBLE);
-
-// Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
 
 CONST DWORD SIZE_OF_HISTOGRAM = 6; // Количество интервалов в гистограмме
 
@@ -33,3 +30,4 @@ DWORD getModeFromType(CONST TCHAR*);
 VOID createTestFile(TCHAR*);
 VOID saveResults(DOUBLE*, TCHAR*, DWORD, DWORD);
 VOID fillBuffer(TCHAR*, DWORD);
+pair make_pair(DWORD, DOUBLE);

@@ -9,19 +9,18 @@ Config testConfig;
 * param - пустой указатель по которому можно получить данные переданные с потока
 */
 DWORD WINAPI testDrive(LPVOID  param) {
-    testConfig = *((Config*)param); // id родительского потока
+    testConfig = *((Config*)param);
 
+    DWORD typeAccess, typeOpen, bufferFlag, modeFlag;
     DOUBLE totalTime = 0, totalmb = 0;
+    HANDLE file;
 
     // Определение полного пути к файлу
-    TCHAR fullPath[20] = _T("");
-    _tcscat_s(fullPath, testConfig.disk);
+    TCHAR fullPath[20];
+    _tcscpy_s(fullPath, testConfig.disk);
     _tcscat_s(fullPath, _T("test.tmp"));
 
     // Создание хедлера на файл в зависимости от типа теста
-    HANDLE file;
-    DWORD typeAccess, typeOpen, bufferFlag, modeFlag;
-
     if (testConfig.typeTest == READ_TEST) {
         createTestFile(fullPath);
         typeAccess = GENERIC_READ;
@@ -44,13 +43,12 @@ DWORD WINAPI testDrive(LPVOID  param) {
             modeFlag | bufferFlag,
             NULL);
 
-
         // Проверка но то, определен ли хендлер
         if (file == INVALID_HANDLE_VALUE) {
             _tprintf(_T("Terminal failure: Unable to create file for write with error code %d.\n"), GetLastError());
             CloseHandle(file);
-            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new int(0));
-            return NULL;
+            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new DWORD(0));
+            return -1;
         }
 
         // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
@@ -60,7 +58,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
         if (test.first == NULL) {
             _tprintf(_T("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
             CloseHandle(file);
-            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new int(0));
+            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new DWORD(0));
             DeleteFile(fullPath);
             return -1;
         }
@@ -71,6 +69,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
 
         CloseHandle(file);
     }
+
     DeleteFile(fullPath);
 
     // Вывод информации про результаты тестирования
@@ -80,7 +79,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
     DOUBLE res = (DOUBLE)totalmb / totalTime;
     _stprintf_s(str, _T("%.2lf"), res);
     _tcscat_s(str, _T(" МБ\\с"));
-    Sleep(800);
+    Sleep(500);
 
     PostThreadMessage(testConfig.parentThreadId, SEND_TEST_RESULT, 0, (LPARAM)str);
     Sleep(100);
@@ -124,6 +123,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
 
     DOUBLE* buffersTimes = new DOUBLE[iterations];
     DWORD pbStateCurrent, pbStateLast = 0; // Состояния прогресс бара
+
     //записываем в файл count раз массива данных
     for (DWORD i = 0; i < iterations; ++i) {
         if (threadStatus == CANCELED)
