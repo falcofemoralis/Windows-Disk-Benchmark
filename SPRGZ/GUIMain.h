@@ -3,7 +3,6 @@
 #include <Windows.h>
 #include <CommCtrl.h>
 
-extern HWND pb_progress, text_read, text_write, btn_startWrite, btn_startRead;
 extern DWORD threadStatus;
 
 #define ID_BTN 20

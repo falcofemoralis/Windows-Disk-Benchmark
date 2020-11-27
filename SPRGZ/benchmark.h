@@ -14,15 +14,15 @@
 #define WRITE_TEST 50
 #define READ_TEST 51
 
-
 using namespace std;
 
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
 
+CONST DWORD SIZE_OF_HISTOGRAM = 6; // Количество интервалов в гистограмме
 
 DWORD testDrive(LPVOID);
 RESULT testIteration(HANDLE, DWORD);
 DWORD getModeFromType(CONST TCHAR*);
 VOID createTestFile(TCHAR[]);
-VOID saveResultsGraph(DOUBLE*, DWORD, TCHAR*);
-VOID saveResultsOfHistogram(DWORD*, DWORD, TCHAR*);
+VOID saveResults(DOUBLE*, TCHAR, DWORD, DWORD);
+VOID filledBuffer(TCHAR*, DWORD);

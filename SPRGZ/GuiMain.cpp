@@ -4,14 +4,14 @@
 
 // —троковые константы дл€ размещени€ их в выпадающие списки
 CONST TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL"};
-CONST TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "2 MB", "4 MB", "8 MB", "16 MB" };
+CONST TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "4 MB", "8 MB", "16 MB" };
 CONST TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB", "2048 MB"};
 CONST TCHAR* disks[26];
 CONST TCHAR* disksNames[26];
 CONST TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 
 //  онстанты значений дл€ юзер конфига
-DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 2 * MB, 4 * MB, 8 * MB, 16 * MB };
+DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 4 * MB, 8 * MB, 16 * MB };
 unsigned int fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
 HWND btn_stop, btn_pause, btn_startRead, btn_startWrite, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, cb_buffering, text_read, text_write, pb_progress;
@@ -23,7 +23,7 @@ DWORD threadStatus = CANCELED;
 
 Config userConfig;
 
-DWORD main() {
+INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow) {
 	//инициализаци€ 
 	initConfig();
 
@@ -159,7 +159,7 @@ VOID OnCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 			CheckDlgButton(hwnd, cb_buffering_id, BST_UNCHECKED);
 		else 
 			CheckDlgButton(hwnd, cb_buffering_id, BST_CHECKED);
-		userConfig.isBuffering = checked;
+		userConfig.isBuffering = !checked;
 	}
 }
 
@@ -210,6 +210,7 @@ VOID initConfig() {
 	userConfig.fileSize = fileSizes[0];
 	userConfig.mode = getModeFromType(modes[0]);
 	userConfig.disk = disks[0];
+	userConfig.isBuffering = FALSE;
 }
 // ”правление тестом
 DWORD parentThreadId; // id родительского потока который передаетс€ в тред
