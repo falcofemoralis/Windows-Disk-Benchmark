@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <strsafe.h>
 #include <CommCtrl.h>
+#include <corecrt_math.h>
 
 #define KB 1024
 #define MB KB*1024
@@ -21,8 +22,6 @@ struct pair {
 	DWORD first;
 	DOUBLE second;
 };
-
-CONST DWORD SIZE_OF_HISTOGRAM = 6; // Количество интервалов в гистограмме
 
 DWORD testDrive(LPVOID);
 RESULT testIteration(HANDLE, DWORD);

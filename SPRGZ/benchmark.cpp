@@ -74,6 +74,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
 
     // Вывод информации про результаты тестирования
     totalmb = ((totalmb / (DOUBLE)1024)) / (DOUBLE)1024; // Перевод в мегабайты
+    totalTime /= 1000; // Перевод в секунды
 
     TCHAR str[20];
     DOUBLE res = (DOUBLE)totalmb / totalTime;
@@ -115,11 +116,6 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
     // Для отображение прогресса на прогресс баре
     DWORD curProgress = (iterations * iteration * 100);
     DWORD allSteps = iterations * testConfig.countTests;
-
-    // Для гистограмы
-    DOUBLE baseTime = 0.001;
-    DWORD counter = 0;
-    DWORD* iterationsPerTime = new DWORD[SIZE_OF_HISTOGRAM];
 
     DOUBLE* buffersTimes = new DOUBLE[iterations];
     DWORD pbStateCurrent, pbStateLast = 0; // Состояния прогресс бара
@@ -163,17 +159,10 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         ElapsedMicroseconds.QuadPart *= 1000000;
         ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
 
-        //Пока что вывод итераций в консоль 
-        buffersTimes[i] = ElapsedMicroseconds.QuadPart / (double)1000000;
+        // Сохранение в в секундах
+        buffersTimes[i] = ElapsedMicroseconds.QuadPart / (double)1000;
         sumBytesProcess += dwBytesProcess;
-        totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
-
-        // Запись времени для гистограмы
-        if (counter < SIZE_OF_HISTOGRAM && totalTime > baseTime) {
-            iterationsPerTime[counter] = i + 1;
-            baseTime *= 10;
-            ++counter;
-        }
+        totalTime += buffersTimes[i];
 
         //установка прогресса - если текущий процент прогресса (целое число) изменился по сравнению с прошлым - происходит изменение прогресс бара
         pbStateCurrent = ((100 * (i + 1) + curProgress) / allSteps);
@@ -182,10 +171,6 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
             pbStateLast = pbStateCurrent; // Текущее состояние для дальнейшей операции становится прошлым
         }
     }
-
-    // Запись остатка
-    if (counter == SIZE_OF_HISTOGRAM - 1)
-        iterationsPerTime[counter] = iterations;
 
     // Если количество обработаных байт не совпадает с необходимым - возникла ошибка
     if (sumBytesProcess != dwBytesToProcess)
@@ -201,9 +186,8 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         sprintf(fileName, "ReadTest%d", iteration);
 
     saveResults(buffersTimes, fileName, iterations, TYPE_GRAPH);
+    saveResults(buffersTimes, fileName, iterations, TYPE_HISTOGRAM);
 
-    //saveResultsGraph(buffersTimes, iterations, fileName);
-    //saveResultsOfHistogram(iterationsPerTime, counter, fileName);
     return make_pair(sumBytesProcess, totalTime);
 }
 
@@ -265,23 +249,64 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     DWORD dwTemp;
     TCHAR buffer[30];
     TCHAR* newFileName = new TCHAR[70];
+    DWORD intervals[5];
+    DOUBLE ranges[6];
+    ZeroMemory(&intervals, sizeof(intervals));
 
-    sprintf(newFileName, "%dKB__%s_%s_%s.csv\0", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
+    sprintf(newFileName, "%dKB_%s_%s_%s.csv\0", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
 
     // Создаем файл, куда будут записанны значения
     HANDLE hFile = CreateFile(newFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (INVALID_HANDLE_VALUE == hFile) return;
-
-    for (DWORD i = 1; i <= size; ++i) {
-        switch (type) {
-        case TYPE_GRAPH:
+    
+    if (type == TYPE_GRAPH) {
+        for (DWORD i = 1; i < size; ++i) {
             sprintf(buffer, "%d;%.6lf\n\0", i * testConfig.bufferSize, valuesArray[i - 1]);
-            break;
-        case TYPE_HISTOGRAM:
-            //sprintf(buffer, "%s;%d\n\0", interval[i - 1], valuesArray[i - 1]);
-            break;
+            WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }
-        WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
+    }else {
+        // Определение шкал гистограммы
+        DOUBLE min = 100000, max = 0;
+        for (DWORD i = 0; i < size; ++i) {
+            if (max < valuesArray[i]) max = valuesArray[i];
+            if(min > valuesArray[i]) min = valuesArray[i];
+        }
+
+        DOUBLE averageCenter = (min + max) / 2;
+        DWORD tmp = log10(averageCenter);
+        DOUBLE weight = tmp == 0 ? 0.1 : tmp;
+        DOUBLE scale = tmp + 2; //Регулирует разбросс
+        DOUBLE deltaLeft = averageCenter - scale * weight;
+        DOUBLE deltaRight = averageCenter + scale * weight;
+        DOUBLE averageLeft = ((deltaLeft - min) / 2) + min;
+        DOUBLE averageRight = ((max - deltaRight) / 2) + deltaRight;
+
+        //Для теста
+        ranges[0] = min;
+        ranges[1] = averageLeft;
+        ranges[2] = deltaLeft;
+        ranges[3] = deltaRight;
+        ranges[4] = averageRight;
+        ranges[5] = max;
+
+        for (DWORD i = 0; i < size; ++i) {
+            DOUBLE value = valuesArray[i];
+            if (value >= min && value < averageLeft)
+                intervals[0]++;
+            else if (value >= averageLeft && value < deltaLeft)
+                intervals[1]++;
+            else if (value >= deltaLeft && value < deltaRight)
+                intervals[2]++;
+            else if (value >= deltaRight && value < averageRight)
+                intervals[3]++;
+            else
+                intervals[4]++;
+        }
+
+        for (DWORD i = 0; i < 5; ++i) {
+            sprintf(buffer, "%d;%.2lf-%.2lf\n\0", intervals[i], ranges[i], ranges[i+1]);
+            WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
+        }
     }
 
     CloseHandle(hFile);
