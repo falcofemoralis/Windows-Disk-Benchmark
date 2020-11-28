@@ -9,19 +9,18 @@ Config testConfig;
 * param - пустой указатель по которому можно получить данные переданные с потока
 */
 DWORD WINAPI testDrive(LPVOID  param) {
-    testConfig = *((Config*)param); // id родительского потока
+    testConfig = *((Config*)param);
 
+    DWORD typeAccess, typeOpen, bufferFlag, modeFlag;
     DOUBLE totalTime = 0, totalmb = 0;
+    HANDLE file;
 
     // Определение полного пути к файлу
-    TCHAR fullPath[20] = _T("");
-    _tcscat_s(fullPath, testConfig.disk);
+    TCHAR fullPath[20];
+    _tcscpy_s(fullPath, testConfig.disk);
     _tcscat_s(fullPath, _T("test.tmp"));
 
     // Создание хедлера на файл в зависимости от типа теста
-    HANDLE file;
-    DWORD typeAccess, typeOpen, bufferFlag, modeFlag;
-
     if (testConfig.typeTest == READ_TEST) {
         createTestFile(fullPath);
         typeAccess = GENERIC_READ;
@@ -44,13 +43,12 @@ DWORD WINAPI testDrive(LPVOID  param) {
             modeFlag | bufferFlag,
             NULL);
 
-
         // Проверка но то, определен ли хендлер
         if (file == INVALID_HANDLE_VALUE) {
             _tprintf(_T("Terminal failure: Unable to create file for write with error code %d.\n"), GetLastError());
             CloseHandle(file);
-            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new int(0));
-            return NULL;
+            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new DWORD(0));
+            return -1;
         }
 
         // Запуск записи в файл и подсчет результата (test.first - количество записаных мегбайт, test.second - количество затраченого времени)
@@ -60,7 +58,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
         if (test.first == NULL) {
             _tprintf(_T("Terminal failure: Unable to write to file with error code %d.\n"), GetLastError());
             CloseHandle(file);
-            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new int(0));
+            PostThreadMessage(testConfig.parentThreadId, SEND_PROGRESS_BAR_UPDATE, 0, (LPARAM)new DWORD(0));
             DeleteFile(fullPath);
             return -1;
         }
@@ -71,16 +69,18 @@ DWORD WINAPI testDrive(LPVOID  param) {
 
         CloseHandle(file);
     }
+
     DeleteFile(fullPath);
 
     // Вывод информации про результаты тестирования
     totalmb = ((totalmb / (DOUBLE)1024)) / (DOUBLE)1024; // Перевод в мегабайты
+    totalTime /= 1000; // Перевод в секунды
 
     TCHAR str[20];
     DOUBLE res = (DOUBLE)totalmb / totalTime;
     _stprintf_s(str, _T("%.2lf"), res);
     _tcscat_s(str, _T(" МБ\\с"));
-    Sleep(800);
+    Sleep(500);
 
     PostThreadMessage(testConfig.parentThreadId, SEND_TEST_RESULT, 0, (LPARAM)str);
     Sleep(100);
@@ -117,13 +117,9 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
     DWORD curProgress = (iterations * iteration * 100);
     DWORD allSteps = iterations * testConfig.countTests;
 
-    // Для гистограмы
-    DOUBLE baseTime = 0.001;
-    DWORD counter = 0;
-    DWORD* iterationsPerTime = new DWORD[SIZE_OF_HISTOGRAM];
-
     DOUBLE* buffersTimes = new DOUBLE[iterations];
     DWORD pbStateCurrent, pbStateLast = 0; // Состояния прогресс бара
+
     //записываем в файл count раз массива данных
     for (DWORD i = 0; i < iterations; ++i) {
         if (threadStatus == CANCELED)
@@ -163,17 +159,10 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         ElapsedMicroseconds.QuadPart *= 1000000;
         ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
 
-        //Пока что вывод итераций в консоль 
-        buffersTimes[i] = ElapsedMicroseconds.QuadPart / (double)1000000;
+        // Сохранение в в секундах
+        buffersTimes[i] = ElapsedMicroseconds.QuadPart / (double)1000;
         sumBytesProcess += dwBytesProcess;
-        totalTime += (ElapsedMicroseconds.QuadPart / (double)1000000);
-
-        // Запись времени для гистограмы
-        if (counter < SIZE_OF_HISTOGRAM && totalTime > baseTime) {
-            iterationsPerTime[counter] = i + 1;
-            baseTime *= 10;
-            ++counter;
-        }
+        totalTime += buffersTimes[i];
 
         //установка прогресса - если текущий процент прогресса (целое число) изменился по сравнению с прошлым - происходит изменение прогресс бара
         pbStateCurrent = ((100 * (i + 1) + curProgress) / allSteps);
@@ -182,10 +171,6 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
             pbStateLast = pbStateCurrent; // Текущее состояние для дальнейшей операции становится прошлым
         }
     }
-
-    // Запись остатка
-    if (counter == SIZE_OF_HISTOGRAM - 1)
-        iterationsPerTime[counter] = iterations;
 
     // Если количество обработаных байт не совпадает с необходимым - возникла ошибка
     if (sumBytesProcess != dwBytesToProcess)
@@ -201,9 +186,8 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         sprintf(fileName, "ReadTest%d", iteration);
 
     saveResults(buffersTimes, fileName, iterations, TYPE_GRAPH);
+    saveResults(buffersTimes, fileName, iterations, TYPE_HISTOGRAM);
 
-    //saveResultsGraph(buffersTimes, iterations, fileName);
-    //saveResultsOfHistogram(iterationsPerTime, counter, fileName);
     return make_pair(sumBytesProcess, totalTime);
 }
 
@@ -266,22 +250,49 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     TCHAR buffer[30];
     TCHAR* newFileName = new TCHAR[70];
 
-    sprintf(newFileName, "%dKB__%s_%s_%s.csv\0", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
+    sprintf(newFileName, "%dKB_%s_%s_%s.csv\0", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
 
     // Создаем файл, куда будут записанны значения
     HANDLE hFile = CreateFile(newFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (INVALID_HANDLE_VALUE == hFile) return;
-
-    for (DWORD i = 1; i <= size; ++i) {
-        switch (type) {
-        case TYPE_GRAPH:
-            sprintf(buffer, "%d;%.6lf\n\0", i, valuesArray[i - 1]);
-            break;
-        case TYPE_HISTOGRAM:
-            //sprintf(buffer, "%s;%d\n\0", interval[i - 1], valuesArray[i - 1]);
-            break;
+    
+    if (type == TYPE_GRAPH) {
+        for (DWORD i = 1; i < size; ++i) {
+            sprintf(buffer, "%d;%.6lf\n\0", i * testConfig.bufferSize, valuesArray[i - 1]);
+            WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }
-        WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
+    }
+    else {
+        DWORD iterations[4];
+        DOUBLE ranges[5];
+        ZeroMemory(&iterations, sizeof(iterations));
+
+        std::sort(valuesArray, valuesArray + size);
+
+        DOUBLE sum = 0;
+        for (DWORD i = 0; i < size; ++i)
+            sum += valuesArray[i];
+
+        DOUBLE average = sum / size; // Среднее значение
+        DOUBLE range = (average - valuesArray[0]) * 0.5; // Диапазон от среднего значения
+
+        ranges[0] = valuesArray[0]; // Минимум
+        ranges[1] = average - range; // Левая граница
+        ranges[2] = average + range; // Правая граница
+        ranges[3] = average * 3; // Отклонение среднего (взято как 200% пока что)
+        ranges[4] = valuesArray[size-1]; // Максимум
+
+        for (DWORD i = 0; i < size; ++i)
+            for (DWORD j = 1; j <= 4; ++j)
+                if (valuesArray[i] <= ranges[j]) {
+                    ++iterations[j - 1];
+                    break;
+                }
+        
+        for (DWORD i = 0; i < 4; ++i) {
+            sprintf(buffer, "%3.2lf;%.3lf-%.3lf\n\0", ((DOUBLE)iterations[i] / size) * 100, ranges[i], ranges[i + 1]);
+            WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
+        }
     }
 
     CloseHandle(hFile);

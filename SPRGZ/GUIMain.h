@@ -28,11 +28,11 @@ extern DWORD threadStatus;
 #define text_read_id ID_TEXT
 #define text_write_id ID_TEXT + 1	
 
-
 // Сообщения между тредами
 #define SEND_TEST_RESULT WM_APP + 1
 #define SEND_PROGRESS_BAR_UPDATE WM_APP + 2
 
+// Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
 struct Config {
     DWORD bufferSize;
     CONST TCHAR* mode;
@@ -44,28 +44,24 @@ struct Config {
     BOOL isBuffering;
 };
 
-LRESULT CALLBACK wndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
-
-/////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
 // Структура с параметрами view объектов: x,y - координаты объекта, width,height - размеры view
 struct ViewParam {
-	DWORD x, y;
-	DWORD width, height;
+    DWORD x, y;
+    DWORD width, height;
 };
+
+/////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
+
+LRESULT CALLBACK wndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 VOID createBox(CONST TCHAR* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr);
 HWND createCombobox(CONST TCHAR* nameBox, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
 HWND createButton(CONST TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd);
 HWND createText(CONST TCHAR* nameBtn, ViewParam* params, DWORD id, HWND& hwnd, DWORD isBold, DWORD size);
 HWND createProgressBar(ViewParam* params, DWORD id, HWND& hwnd);
-HWND* createRadiobtnGroup(CONST TCHAR* nameBtn, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
+HWND* createRadioBtnGroup(CONST TCHAR* nameBtn, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd);
 HWND createCheckBox(CONST TCHAR* text, ViewParam* params, DWORD id, HWND& hwnd);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 VOID onCreate(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 VOID onCommand(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-// Инициализация всех необходимых первоначальных данных
 VOID initConfig();
 VOID startTest(DWORD);
 VOID pauseTest();

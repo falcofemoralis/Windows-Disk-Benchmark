@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <strsafe.h>
 #include <CommCtrl.h>
+#include <corecrt_math.h>
+#include <algorithm>
+
+
 
 #define KB 1024
 #define MB KB*1024
@@ -21,11 +25,6 @@ struct pair {
 	DWORD first;
 	DOUBLE second;
 };
-pair make_pair(DWORD, DOUBLE);
-
-// Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении
-
-CONST DWORD SIZE_OF_HISTOGRAM = 6; // Количество интервалов в гистограмме
 
 DWORD testDrive(LPVOID);
 RESULT testIteration(HANDLE, DWORD);
@@ -33,3 +32,4 @@ DWORD getModeFromType(CONST TCHAR*);
 VOID createTestFile(TCHAR*);
 VOID saveResults(DOUBLE*, TCHAR*, DWORD, DWORD);
 VOID fillBuffer(TCHAR*, DWORD);
+pair make_pair(DWORD, DOUBLE);

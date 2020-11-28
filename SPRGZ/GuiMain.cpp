@@ -14,13 +14,16 @@ CONST TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 4 * MB, 8 * MB, 16 * MB };
 UINT32 fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
-HWND btn_stop, btn_pause, btn_startRead, btn_startWrite, cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, cb_buffering, text_read, text_write, pb_progress;
+// Нужные переменные
+HWND btn_stop, btn_pause, btn_startRead, btn_startWrite,
+cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, cb_buffering, text_read, text_write, pb_progress;
 HWND *rb_group_modes;
 
-DWORD mainThreadId; // ID основного потока
+// Переменные потока
 HANDLE workingThread;
 DWORD threadStatus = CANCELED;
 
+// Настройки теста
 Config userConfig;
 
 INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow) {
@@ -28,21 +31,18 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 	initConfig();
 
 	// Создание окна
-	WNDCLASS wcl;
-
-	memset(&wcl, 0, sizeof(WNDCLASS));
-	wcl.lpszClassName = "my window";
-	wcl.lpfnWndProc = wndProc;
-	wcl.hbrBackground = (HBRUSH)(CreateSolidBrush(RGB(243, 243, 243)));
-	RegisterClass(&wcl);
-
-	HWND mainWindow = CreateWindow("my Window", "Disk benchmark", WS_SYSMENU | WS_MINIMIZEBOX, 10, 10, 450, 400, NULL, NULL, NULL, NULL);
+	WNDCLASS wc;
+	ZeroMemory(&wc, sizeof(wc));
+	wc.lpszClassName = "MainWndClass";
+	wc.lpfnWndProc = wndProc;
+	wc.hbrBackground = (HBRUSH)(CreateSolidBrush(RGB(243, 243, 243)));
+	RegisterClass(&wc);
+	HWND mainWindow = CreateWindow("MainWndClass", "Disk benchmark", WS_SYSMENU | WS_MINIMIZEBOX, 10, 10, 450, 400, NULL, NULL, NULL, NULL);
 	ShowWindow(mainWindow, SW_SHOWNORMAL);
 
 	// Принимает сообщения, а так же не дает программе завершится
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
-
 		switch (msg.message)
 		{
 		case SEND_TEST_RESULT: // Установка результата
@@ -99,10 +99,10 @@ VOID onCreate(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 	//Блок режимов
 	createBox("Modes", new ViewParam{ 300, 130, 120, 120 }, hwnd, BS_CENTER);
-	rb_group_modes = createRadiobtnGroup("Modes buttons", new ViewParam{ 285, 140, 125, 20 }, modes, sizeof(modes) / sizeof(modes[0]), NULL, hwnd);
+	rb_group_modes = createRadioBtnGroup("Modes buttons", new ViewParam{ 285, 140, 125, 20 }, modes, sizeof(modes) / sizeof(modes[0]), NULL, hwnd);
 
 	// Чекбокс буферизации
-	cb_buffering = createCheckBox("BUFFERING", new ViewParam{ 285, 220, 125, 20 }, cb_buffering_id, hwnd);
+	cb_buffering = createCheckBox("BUFFERING", new ViewParam{ 285, 200, 125, 20 }, cb_buffering_id, hwnd);
 
 	//кнопки управления
 	btn_startRead = createButton("Read test", new ViewParam{ 165, 210, 80, 25 }, btn_startRead_id, hwnd);
@@ -160,8 +160,9 @@ VOID onCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	}
 }
 
+//определение дисков
 VOID getDisks() {
-	//определение дисков
+	
 	DWORD dr = GetLogicalDrives();
 
 	DWORD countDisk = 0; // Счетчик для записи в массив всех дисков
@@ -191,13 +192,6 @@ VOID getDisks() {
 	}
 }
 
-// Установка шрифта
-VOID setFont(HWND hwnd, DWORD size, DWORD weight) {
-	HFONT font = CreateFont(size, 0, 0, 0, weight, FALSE, FALSE, FALSE, ANSI_CHARSET,
-		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
-	SendMessage(hwnd, WM_SETFONT, WPARAM(font), TRUE);
-}
-
 // Инициализация дефолтный юзерских настроек
 VOID initConfig() {
 	//определение дисков
@@ -211,8 +205,8 @@ VOID initConfig() {
 	userConfig.disk = disks[0];
 	userConfig.isBuffering = FALSE;
 }
-// Управление тестом
-DWORD parentThreadId; // id родительского потока который передается в тред
+
+/////////////////////////////////// Управление тестом ///////////////////////////////////
 VOID startTest(DWORD typeTest) {
 	userConfig.typeTest = typeTest;
 	userConfig.parentThreadId = GetCurrentThreadId(); // Получение текущего id потока который будет являться родительским для теста
@@ -241,8 +235,8 @@ VOID pauseTest() {
 }
 
 VOID stopTest() {
-	EnableWindow(btn_startWrite, true);
-	EnableWindow(btn_startRead, true);
+	EnableWindow(btn_startWrite, TRUE);
+	EnableWindow(btn_startRead, TRUE);
 	SetWindowText(btn_pause, "Pause");
 	threadStatus = CANCELED;
 	ResumeThread(workingThread); // Завершаем поток естественным образом
@@ -256,11 +250,18 @@ VOID setResult(TCHAR* res) {
 		SetWindowText(text_read, res);
 
 	SendMessage(pb_progress, PBM_SETPOS, 0, 0);
-	EnableWindow(btn_startWrite, true);
-	EnableWindow(btn_startRead, true);
+	EnableWindow(btn_startWrite, TRUE);
+	EnableWindow(btn_startRead, TRUE);
 }
 
 /////////////////////////////////// Функции для создания графических элементов ///////////////////////////////////
+
+// Установка шрифта
+VOID setFont(HWND hwnd, DWORD size, DWORD weight) {
+	HFONT font = CreateFont(size, 0, 0, 0, weight, FALSE, FALSE, FALSE, ANSI_CHARSET,
+		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+	SendMessage(hwnd, WM_SETFONT, WPARAM(font), TRUE);
+}
 
 VOID createBox(CONST TCHAR* nameBtn, ViewParam* params, HWND& hwnd, DWORD atr) {
 	HWND box;
@@ -301,7 +302,7 @@ HWND createProgressBar(ViewParam* params, DWORD id, HWND& hwnd) {
 	return pb;
 }
 
-HWND* createRadiobtnGroup(CONST TCHAR* nameBtn, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd) {
+HWND* createRadioBtnGroup(CONST TCHAR* nameBtn, ViewParam* params, CONST TCHAR* values[], DWORD countValues, DWORD id, HWND& hwnd) {
 	HWND* btns = new HWND[countValues];
 	DWORD y = params->y;
 	for (DWORD i = 0; i < countValues; ++i) {
@@ -321,6 +322,3 @@ HWND createCheckBox(CONST TCHAR* text, ViewParam* params, DWORD id, HWND& hwnd) 
 	setFont(btn, 15, FW_MEDIUM);
 	return btn;
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
