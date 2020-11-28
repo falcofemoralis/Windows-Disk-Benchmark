@@ -4,7 +4,7 @@
 
 // Строковые константы для размещения их в выпадающие списки
 CONST TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL"};
-CONST TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "4 MB", "8 MB", "16 MB" };
+CONST TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "4 MB", "8 MB" };
 CONST TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB", "2048 MB"};
 CONST TCHAR* disks[26];
 CONST TCHAR* disksNames[26];
