@@ -249,9 +249,6 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     DWORD dwTemp;
     TCHAR buffer[30];
     TCHAR* newFileName = new TCHAR[70];
-    DWORD intervals[5];
-    DOUBLE ranges[6];
-    ZeroMemory(&intervals, sizeof(intervals));
 
     sprintf(newFileName, "%dKB_%s_%s_%s.csv\0", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
 
@@ -264,47 +261,36 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
             sprintf(buffer, "%d;%.6lf\n\0", i * testConfig.bufferSize, valuesArray[i - 1]);
             WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }
-    }else {
-        // Определение шкал гистограммы
-        DOUBLE min = 100000, max = 0;
-        for (DWORD i = 0; i < size; ++i) {
-            if (max < valuesArray[i]) max = valuesArray[i];
-            if(min > valuesArray[i]) min = valuesArray[i];
-        }
+    }
+    else {
+        DWORD iterations[4];
+        DOUBLE ranges[5];
+        ZeroMemory(&iterations, sizeof(iterations));
 
-        DOUBLE averageCenter = (min + max) / 2;
-        DWORD tmp = log10(averageCenter);
-        DOUBLE weight = tmp == 0 ? 0.1 : tmp;
-        DOUBLE scale = tmp + 2; //Регулирует разбросс
-        DOUBLE deltaLeft = averageCenter - scale * weight;
-        DOUBLE deltaRight = averageCenter + scale * weight;
-        DOUBLE averageLeft = ((deltaLeft - min) / 2) + min;
-        DOUBLE averageRight = ((max - deltaRight) / 2) + deltaRight;
+        std::sort(valuesArray, valuesArray + size);
 
-        //Для теста
-        ranges[0] = min;
-        ranges[1] = averageLeft;
-        ranges[2] = deltaLeft;
-        ranges[3] = deltaRight;
-        ranges[4] = averageRight;
-        ranges[5] = max;
+        DOUBLE sum = 0;
+        for (DWORD i = 0; i < size; ++i)
+            sum += valuesArray[i];
 
-        for (DWORD i = 0; i < size; ++i) {
-            DOUBLE value = valuesArray[i];
-            if (value >= min && value < averageLeft)
-                intervals[0]++;
-            else if (value >= averageLeft && value < deltaLeft)
-                intervals[1]++;
-            else if (value >= deltaLeft && value < deltaRight)
-                intervals[2]++;
-            else if (value >= deltaRight && value < averageRight)
-                intervals[3]++;
-            else
-                intervals[4]++;
-        }
+        DOUBLE average = sum / size; // Среднее значение
+        DOUBLE range = (average - valuesArray[0]) * 0.5; // Диапазон от среднего значения
 
-        for (DWORD i = 0; i < 5; ++i) {
-            sprintf(buffer, "%d;%.2lf-%.2lf\n\0", intervals[i], ranges[i], ranges[i+1]);
+        ranges[0] = valuesArray[0]; // Минимум
+        ranges[1] = average - range; // Левая граница
+        ranges[2] = average + range; // Правая граница
+        ranges[3] = average * 3; // Отклонение среднего (взято как 200% пока что)
+        ranges[4] = valuesArray[size-1]; // Максимум
+
+        for (DWORD i = 0; i < size; ++i)
+            for (DWORD j = 1; j <= 4; ++j)
+                if (valuesArray[i] <= ranges[j]) {
+                    ++iterations[j - 1];
+                    break;
+                }
+        
+        for (DWORD i = 0; i < 4; ++i) {
+            sprintf(buffer, "%3.2lf;%.3lf-%.3lf\n\0", ((DOUBLE)iterations[i] / size) * 100, ranges[i], ranges[i + 1]);
             WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }
     }

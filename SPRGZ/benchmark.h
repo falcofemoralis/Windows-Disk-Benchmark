@@ -5,6 +5,9 @@
 #include <strsafe.h>
 #include <CommCtrl.h>
 #include <corecrt_math.h>
+#include <algorithm>
+
+
 
 #define KB 1024
 #define MB KB*1024
