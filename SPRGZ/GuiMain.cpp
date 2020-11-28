@@ -43,18 +43,17 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 	// Принимает сообщения, а так же не дает программе завершится
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
-		switch (msg.message)
-		{
-		case SEND_TEST_RESULT: // Установка результата
-			TCHAR* res;
-			res = (TCHAR*)msg.lParam;
-			setResult(res);
-			break;
-		case SEND_PROGRESS_BAR_UPDATE: // Обновление прогресс бара
-			DWORD state;
-			state = *((DWORD*)msg.lParam);
-			SendMessage(pb_progress, PBM_SETPOS, state, 0);
-			break;
+		switch (msg.message) {
+			case SEND_TEST_RESULT: // Установка результата
+				TCHAR* res;
+				res = (TCHAR*)msg.lParam;
+				setResult(res);
+				break;
+			case SEND_PROGRESS_BAR_UPDATE: // Обновление прогресс бара
+				DWORD state;
+				state = *((DWORD*)msg.lParam);
+				SendMessage(pb_progress, PBM_SETPOS, state, 0);
+				break;
 		}
 
 		DispatchMessage(&msg);
@@ -63,13 +62,11 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 	return 0;
 }
 
-LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
-{
-	switch (message)
-	{
-	case WM_CREATE: onCreate(hwnd, message, wParam, lParam); break;
-	case WM_COMMAND: onCommand(hwnd, message, wParam, lParam); break;
-	case WM_DESTROY: PostQuitMessage(0); break;
+LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	switch (message) {
+		case WM_CREATE: onCreate(hwnd, message, wParam, lParam); break;
+		case WM_COMMAND: onCommand(hwnd, message, wParam, lParam); break;
+		case WM_DESTROY: PostQuitMessage(0); break;
 	}
 
 	return DefWindowProc(hwnd, message, wParam, lParam);

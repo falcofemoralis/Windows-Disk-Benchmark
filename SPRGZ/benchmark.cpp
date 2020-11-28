@@ -263,8 +263,9 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
         }
     }
     else {
-        DWORD iterations[4];
-        DOUBLE ranges[5];
+        CONST DWORD MAX_ITERATIONS = 4, MAX_RANGES = 5;
+        DWORD iterations[MAX_ITERATIONS];
+        DOUBLE ranges[MAX_RANGES];
         ZeroMemory(&iterations, sizeof(iterations));
 
         std::sort(valuesArray, valuesArray + size);
@@ -283,13 +284,13 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
         ranges[4] = valuesArray[size-1]; // Максимум
 
         for (DWORD i = 0; i < size; ++i)
-            for (DWORD j = 1; j <= 4; ++j)
+            for (DWORD j = 1; j <= MAX_RANGES; ++j)
                 if (valuesArray[i] <= ranges[j]) {
                     ++iterations[j - 1];
                     break;
                 }
         
-        for (DWORD i = 0; i < 4; ++i) {
+        for (DWORD i = 0; i < MAX_ITERATIONS; ++i) {
             sprintf(buffer, "%3.2lf;%.3lf-%.3lf\n\0", ((DOUBLE)iterations[i] / size) * 100, ranges[i], ranges[i + 1]);
             WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }
