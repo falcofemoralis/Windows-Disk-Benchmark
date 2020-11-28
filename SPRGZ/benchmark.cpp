@@ -68,6 +68,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
         totalTime += test.second;
 
         CloseHandle(file);
+        return 0;
     }
 
     DeleteFile(fullPath);
