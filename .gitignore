@@ -434,3 +434,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
+/SPRGZ/*.txt
+/SPRGZ/*.csv
+
