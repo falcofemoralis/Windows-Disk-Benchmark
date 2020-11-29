@@ -68,7 +68,6 @@ DWORD WINAPI testDrive(LPVOID  param) {
         totalTime += test.second;
 
         CloseHandle(file);
-        return 0;
     }
 
     DeleteFile(fullPath);
@@ -85,6 +84,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
 
     PostThreadMessage(testConfig.parentThreadId, SEND_TEST_RESULT, 0, (LPARAM)str);
     Sleep(100);
+    return 0;
 }
 
 /* Тестирования одного прохода по файлу
@@ -161,7 +161,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
 
         // Сохранение в в секундах
-        buffersTimes[i] = ElapsedMicroseconds.QuadPart / (double)1000;
+        buffersTimes[i] = ElapsedMicroseconds.QuadPart / (DOUBLE)1000;
         sumBytesProcess += dwBytesProcess;
         totalTime += buffersTimes[i];
 
@@ -251,7 +251,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     TCHAR buffer[30];
     TCHAR* newFileName = new TCHAR[70];
 
-    sprintf(newFileName, "%dKB_%s_%s_%s.csv\0", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
+    sprintf(newFileName, "%s%dKB_%s_%s_%s.csv\0", testConfig.isBuffering == 1 ? "B" : "N", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
 
     // Создаем файл, куда будут записанны значения
     HANDLE hFile = CreateFile(newFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);

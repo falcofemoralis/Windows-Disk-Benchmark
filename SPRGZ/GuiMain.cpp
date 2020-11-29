@@ -5,7 +5,7 @@
 // —троковые константы дл€ размещени€ их в выпадающие списки
 CONST TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL"};
 CONST TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "4 MB", "8 MB" };
-CONST TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB", "2048 MB"};
+CONST TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB", "2048 MB" };
 CONST TCHAR* disks[26];
 CONST TCHAR* disksNames[26];
 CONST TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
@@ -164,8 +164,7 @@ VOID getDisks() {
 
 	DWORD countDisk = 0; // —четчик дл€ записи в массив всех дисков
 
-	for (DWORD i = 0; i < 26; i++)
-	{
+	for (DWORD i = 0; i < 26; i++) {
 		BOOL isFound = ((dr >> i) & 0x00000001); // ¬се диски представл€ютс€ битовой маской, если бит 0 установлен в единицу, значит существует диск ј и так далее по алфавиту
 		if (isFound) {
 			//получем букву диска
