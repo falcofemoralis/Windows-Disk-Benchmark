@@ -68,6 +68,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
         totalTime += test.second;
 
         CloseHandle(file);
+        return 0;
     }
 
     DeleteFile(fullPath);
@@ -257,8 +258,10 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     if (INVALID_HANDLE_VALUE == hFile) return;
     
     if (type == TYPE_GRAPH) {
-        for (DWORD i = 1; i < size; ++i) {
-            sprintf(buffer, "%d;%.6lf\n\0", i * testConfig.bufferSize, valuesArray[i - 1]);
+        DOUBLE totalTime = 0;
+        for (DWORD i = 1; i <= size; ++i) {
+            totalTime += valuesArray[i - 1];
+            sprintf(buffer, "%d;%.3lf\n\0", i * testConfig.bufferSize, totalTime);
             WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }
     }
@@ -291,6 +294,8 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
                 }
         
         for (DWORD i = 0; i < MAX_ITERATIONS; ++i) {
+            if (iterations[i] == 0)
+                continue;
             sprintf(buffer, "%3.2lf;%.3lf-%.3lf\n\0", ((DOUBLE)iterations[i] / size) * 100, ranges[i], ranges[i + 1]);
             WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }
@@ -306,7 +311,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
 */
 VOID fillBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
     //тестовый массив данных
-    TCHAR Data[] = _T("0x10");
+    TCHAR Data[] = _T("Vladyslav");
     DWORD divider = sizeof(Data) / sizeof(Data[0]) - 1;
     for (DWORD i = 0; i < sizeBuffer; i++)
         dataBuffer[i] = Data[i % divider];
