@@ -1,0 +1,23 @@
+﻿  GuiMain.cpp
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(15,72): warning C4307: "*": переполнение целой константы со знаком
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(15,72): warning C4838: Преобразование из "int" в "UINT32" требует сужающего преобразования.
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(118,27): warning C4244: =: преобразование "LRESULT" в "DWORD", возможна потеря данных
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(172,19): warning C4244: инициализация: преобразование "DWORD" в "TCHAR", возможна потеря данных
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(271,13): warning C4312: приведение типов: преобразование из "DWORD" в "HMENU" большего размера
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(281,8): warning C4312: приведение типов: преобразование из "DWORD" в "HMENU" большего размера
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(288,7): warning C4312: приведение типов: преобразование из "DWORD" в "HMENU" большего размера
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(294,143): warning C4312: приведение типов: преобразование из "DWORD" в "HMENU" большего размера
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(306,13): warning C4312: приведение типов: преобразование из "DWORD" в "HMENU" большего размера
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\GuiMain.cpp(318,8): warning C4312: приведение типов: преобразование из "DWORD" в "HMENU" большего размера
+  benchmark.cpp
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\benchmark.cpp(262,84): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\benchmark.cpp(295,84): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
+  benchmark.h
+x64\Release\benchmark.obj : warning LNK4042: объект указан более одного раза; лишние не учитываются
+  Создание кода
+  Previous IPDB not found, fall back to full compilation.
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\benchmark.cpp(326): warning C4715: getModeFromType: значение возвращается не при всех путях выполнения
+D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\SPRGZ\benchmark.cpp(87): warning C4715: testDrive: значение возвращается не при всех путях выполнения
+  All 64 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Создание кода завершено
+  SPRGZ.vcxproj -> D:\Desktop_folder\University\III_Course\SP\SPRGZ\SPRGZ\x64\Release\SPRGZ.exe
