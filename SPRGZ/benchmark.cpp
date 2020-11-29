@@ -84,6 +84,7 @@ DWORD WINAPI testDrive(LPVOID  param) {
 
     PostThreadMessage(testConfig.parentThreadId, SEND_TEST_RESULT, 0, (LPARAM)str);
     Sleep(100);
+    return 0;
 }
 
 /* Тестирования одного прохода по файлу
@@ -160,7 +161,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
 
         // Сохранение в в секундах
-        buffersTimes[i] = ElapsedMicroseconds.QuadPart / (double)1000;
+        buffersTimes[i] = ElapsedMicroseconds.QuadPart / (DOUBLE)1000;
         sumBytesProcess += dwBytesProcess;
         totalTime += buffersTimes[i];
 
@@ -257,8 +258,10 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     if (INVALID_HANDLE_VALUE == hFile) return;
     
     if (type == TYPE_GRAPH) {
-        for (DWORD i = 1; i < size; ++i) {
-            sprintf(buffer, "%d;%.6lf\n\0", i * testConfig.bufferSize, valuesArray[i - 1]);
+        DOUBLE totalTime = 0;
+        for (DWORD i = 1; i <= size; ++i) {
+            totalTime += valuesArray[i - 1];
+            sprintf(buffer, "%d;%.6lf\n\0", i * testConfig.bufferSize, totalTime);
             WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }
     }
@@ -291,6 +294,8 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
                 }
         
         for (DWORD i = 0; i < MAX_ITERATIONS; ++i) {
+            if (iterations[i] == 0)
+                continue;
             sprintf(buffer, "%3.2lf;%.3lf-%.3lf\n\0", ((DOUBLE)iterations[i] / size) * 100, ranges[i], ranges[i + 1]);
             WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
         }

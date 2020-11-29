@@ -7,8 +7,6 @@
 #include <corecrt_math.h>
 #include <algorithm>
 
-
-
 #define KB 1024
 #define MB KB*1024
 #define GB MB*1024
