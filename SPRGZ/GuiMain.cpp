@@ -72,6 +72,7 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
+// Создание окна
 VOID onCreate(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	//Диски
 	createText("Drive to test:", new ViewParam{ 10, 13, 90, 30 }, NULL, hwnd, FW_MEDIUM, 18);
@@ -111,6 +112,7 @@ VOID onCreate(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	pb_progress = createProgressBar(new ViewParam{ 10, 300, 410, 30 }, NULL, hwnd);
 }
 
+// Обработчик команд
 VOID onCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	// Если wParam = CBN_SELCHANGE, значит было выбрано одно из полей выпадающего списка
 	if (HIWORD(wParam) == CBN_SELCHANGE) {
@@ -157,7 +159,7 @@ VOID onCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	}
 }
 
-//определение дисков
+// Определение дисков
 VOID getDisks() {
 	
 	DWORD dr = GetLogicalDrives();
