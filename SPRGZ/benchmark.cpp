@@ -251,7 +251,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     TCHAR buffer[30];
     TCHAR* newFileName = new TCHAR[70];
 
-    sprintf(newFileName, "%dKB_%s_%s_%s.csv\0", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
+    sprintf(newFileName, "%s_%dKB_%s_%s_%s.csv\0", testConfig.isBuffering ? "B" : "NB", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
 
     // Создаем файл, куда будут записанны значения
     HANDLE hFile = CreateFile(newFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
