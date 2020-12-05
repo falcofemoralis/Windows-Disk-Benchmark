@@ -268,11 +268,12 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
         // Вывод интервалов по SIZE_INTERVAL байт
         for (DWORD i = 1; i <= size; ++i) {
             if (tmpBuf >= SIZE_INTERVAL) {
-                DWORD percentTime = (tmpBuf / SIZE_INTERVAL - 1) * valuesArray[i];
+                tmpBuf -= SIZE_INTERVAL; // Вычитание интервала, остается остаток в виде "лишних" для подсчета байт
+                totaSize += SIZE_INTERVAL;
+
+                DOUBLE percentTime = ((DOUBLE(testConfig.bufferSize - tmpBuf)) / testConfig.bufferSize) * valuesArray[i];
                 outputTime = totalTime + percentTime;
                 totalTime = valuesArray[i] - percentTime;
-                tmpBuf -= SIZE_INTERVAL;
-                totaSize += SIZE_INTERVAL;
 
                 sprintf(buffer, "%d;%.6lf\n\0", totaSize, outputTime);
                 WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
