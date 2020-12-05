@@ -266,7 +266,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
         DWORD tmpBuf = 0;
 
         // Вывод интервалов по SIZE_INTERVAL байт
-        for (DWORD i = 1; i <= size; ++i) {
+        for (DWORD i = 0; i < size; ++i) {
             if (tmpBuf >= SIZE_INTERVAL) {
                 tmpBuf -= SIZE_INTERVAL; // Вычитание интервала, остается остаток в виде "лишних" для подсчета байт
                 totaSize += SIZE_INTERVAL;
