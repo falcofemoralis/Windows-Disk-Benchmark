@@ -262,20 +262,20 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     if (type == TYPE_GRAPH) {
         DOUBLE totalTime = 0;
         DOUBLE outputTime = 0;
-        DWORD totaSize = 0;
+        DWORD totalSize = 0;
         DWORD tmpBuf = 0;
 
         // Вывод интервалов по SIZE_INTERVAL байт
-        for (DWORD i = 1; i <= size; ++i) {
+        for (DWORD i = 0; i < size; ++i) {
             if (tmpBuf >= SIZE_INTERVAL) {
                 tmpBuf -= SIZE_INTERVAL; // Вычитание интервала, остается остаток в виде "лишних" для подсчета байт
-                totaSize += SIZE_INTERVAL;
+                totalSize += SIZE_INTERVAL;
 
                 DOUBLE percentTime = ((DOUBLE(testConfig.bufferSize - tmpBuf)) / testConfig.bufferSize) * valuesArray[i];
                 outputTime = totalTime + percentTime;
                 totalTime = valuesArray[i] - percentTime;
 
-                sprintf(buffer, "%d;%.6lf\n\0", totaSize, outputTime);
+                sprintf(buffer, "%d;%.6lf\n\0", totalSize /(MB), outputTime);
                 WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
             }
 
@@ -329,7 +329,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
 */
 VOID fillBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
     //тестовый массив данных
-    TCHAR Data[] = _T("0x10");
+    TCHAR Data[] = _T("Vladyslav");
     DWORD divider = sizeof(Data) / sizeof(Data[0]) - 1;
     for (DWORD i = 0; i < sizeBuffer; i++)
         dataBuffer[i] = Data[i % divider];
