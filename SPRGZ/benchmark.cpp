@@ -3,6 +3,7 @@
 
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении 
 Config testConfig;
+CONST DWORD SIZE_INTERVAL = 50 * MB;
 
 /* Тестирования, открывается в отдельном потоке
 * Параметры:
@@ -240,9 +241,10 @@ VOID createTestFile(TCHAR* fileName) {
 
 /* Сохранение результатов для построение графика
 * Параметры:
-* data - массив данных
-* size - размер массива
+* valuesArray - массив данных
 * fileName - имя файла
+* size - размер массива
+* type - тип сохраняемых данных
 */
 VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     CONST TCHAR* saveResultsTypes[2] = { "Graph", "Histogram" };
@@ -251,7 +253,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     TCHAR buffer[30];
     TCHAR* newFileName = new TCHAR[70];
 
-    sprintf(newFileName, "%s_%dKB_%s_%s_%s.csv\0", testConfig.isBuffering ? "B" : "NB", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
+    sprintf(newFileName, "%s_%dKB_%s_%s_%s.csv\0", testConfig.isBuffering ? "B" : "N", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
 
     // Создаем файл, куда будут записанны значения
     HANDLE hFile = CreateFile(newFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -259,10 +261,12 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     
     if (type == TYPE_GRAPH) {
         DOUBLE totalTime = 0;
+        DOUBLE outputTime = 0;
+        DWORD totaSize = 0;
+        DOUBLE tmpBuf = 0;
+
         for (DWORD i = 1; i <= size; ++i) {
-            totalTime += valuesArray[i - 1];
-            sprintf(buffer, "%d;%.6lf\n\0", i * testConfig.bufferSize, totalTime);
-            WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
+
         }
     }
     else {
