@@ -3,6 +3,7 @@
 
 // Структура конфига, представляет из себя все поля настроек для тестирования диска в приложении 
 Config testConfig;
+CONST DWORD SIZE_INTERVAL = 50 * MB;
 
 /* Тестирования, открывается в отдельном потоке
 * Параметры:
@@ -240,9 +241,10 @@ VOID createTestFile(TCHAR* fileName) {
 
 /* Сохранение результатов для построение графика
 * Параметры:
-* data - массив данных
-* size - размер массива
+* valuesArray - массив данных
 * fileName - имя файла
+* size - размер массива
+* type - тип сохраняемых данных
 */
 VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     CONST TCHAR* saveResultsTypes[2] = { "Graph", "Histogram" };
@@ -251,7 +253,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     TCHAR buffer[30];
     TCHAR* newFileName = new TCHAR[70];
 
-    sprintf(newFileName, "%s%dKB_%s_%s_%s.csv\0", testConfig.isBuffering == 1 ? "B" : "N", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
+    sprintf(newFileName, "%s_%dKB_%s_%s_%s.csv\0", testConfig.isBuffering ? "B" : "N", testConfig.bufferSize / 1024, fileName, saveResultsTypes[type], testConfig.mode);
 
     // Создаем файл, куда будут записанны значения
     HANDLE hFile = CreateFile(newFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -259,10 +261,26 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     
     if (type == TYPE_GRAPH) {
         DOUBLE totalTime = 0;
+        DOUBLE outputTime = 0;
+        DWORD totaSize = 0;
+        DWORD tmpBuf = 0;
+
+        // Вывод интервалов по SIZE_INTERVAL байт
         for (DWORD i = 1; i <= size; ++i) {
-            totalTime += valuesArray[i - 1];
-            sprintf(buffer, "%d;%.3lf\n\0", i * testConfig.bufferSize, totalTime);
-            WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
+            if (tmpBuf >= SIZE_INTERVAL) {
+                tmpBuf -= SIZE_INTERVAL; // Вычитание интервала, остается остаток в виде "лишних" для подсчета байт
+                totaSize += SIZE_INTERVAL;
+
+                DOUBLE percentTime = ((DOUBLE(testConfig.bufferSize - tmpBuf)) / testConfig.bufferSize) * valuesArray[i];
+                outputTime = totalTime + percentTime;
+                totalTime = valuesArray[i] - percentTime;
+
+                sprintf(buffer, "%d;%.6lf\n\0", totaSize, outputTime);
+                WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
+            }
+
+            totalTime += valuesArray[i];
+            tmpBuf += testConfig.bufferSize;
         }
     }
     else {
@@ -311,7 +329,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
 */
 VOID fillBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
     //тестовый массив данных
-    TCHAR Data[] = _T("Vladyslav");
+    TCHAR Data[] = _T("0x10");
     DWORD divider = sizeof(Data) / sizeof(Data[0]) - 1;
     for (DWORD i = 0; i < sizeBuffer; i++)
         dataBuffer[i] = Data[i % divider];
