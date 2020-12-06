@@ -329,7 +329,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
 */
 VOID fillBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
     //тестовый массив данных
-    TCHAR Data[] = _T("0x10");
+    TCHAR Data[] = _T("0x210"); // 210 (16) = 528 (10)
     DWORD divider = sizeof(Data) / sizeof(Data[0]) - 1;
     for (DWORD i = 0; i < sizeBuffer; i++)
         dataBuffer[i] = Data[i % divider];
