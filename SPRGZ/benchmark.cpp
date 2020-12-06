@@ -98,14 +98,14 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
     LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
     LARGE_INTEGER Frequency;
     BOOL bErrorFlag; // Ошибки записи/чтения в файл
-     
+
     //тестовый массив данных
     TCHAR* DataBuffer = new TCHAR[testConfig.bufferSize];
 
     // Если идет тест на запись - происходит заполнение буфера
     if (testConfig.typeTest == WRITE_TEST)
         fillBuffer(DataBuffer, testConfig.bufferSize);
-    
+
     // Для подсчета времени и количества байт
     DOUBLE totalTime = 0;
     DWORD iterations = (DWORD)(testConfig.fileSize / testConfig.bufferSize) + 1;
@@ -130,7 +130,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         // Если поток остановлен - останавливается текущий поток (Останавливается "мягко" для того чтобы остановка не произошла на самой записи/чтении)
         if (threadStatus == PAUSE)
             SuspendThread(GetCurrentThread());
-        
+
         if (testConfig.typeTest == WRITE_TEST) {
             QueryPerformanceCounter(&StartingTime);
             bErrorFlag = WriteFile(
@@ -153,7 +153,7 @@ RESULT testIteration(HANDLE file, DWORD iteration) {
         }
 
         // Если возникла ошибка при тестировании - возвращается NULL
-        if (bErrorFlag == FALSE) 
+        if (bErrorFlag == FALSE)
             return make_pair(NULL, NULL);
 
         //подсчитываем время
@@ -209,7 +209,7 @@ VOID createTestFile(TCHAR* fileName) {
 
     //тестовый массив данных
     DWORD bufferSize = 32 * MB;
-	TCHAR* DataBuffer = new TCHAR[bufferSize];
+    TCHAR* DataBuffer = new TCHAR[bufferSize];
     fillBuffer(DataBuffer, bufferSize);
 
     // Переменные для тестирования
@@ -234,8 +234,8 @@ VOID createTestFile(TCHAR* fileName) {
     if (sumWritten != dwBytesToWrite) {
         _tprintf(_T("Error: dwBytesWritten != dwBytesToWrite\n"));
         return;
-    }      
-    
+    }
+
     CloseHandle(testFile);
 }
 
@@ -258,24 +258,24 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
     // Создаем файл, куда будут записанны значения
     HANDLE hFile = CreateFile(newFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (INVALID_HANDLE_VALUE == hFile) return;
-    
+
     if (type == TYPE_GRAPH) {
         DOUBLE totalTime = 0;
         DOUBLE outputTime = 0;
-        DWORD totaSize = 0;
+        DWORD totalSize = 0;
         DWORD tmpBuf = 0;
 
         // Вывод интервалов по SIZE_INTERVAL байт
         for (DWORD i = 0; i < size; ++i) {
             if (tmpBuf >= SIZE_INTERVAL) {
                 tmpBuf -= SIZE_INTERVAL; // Вычитание интервала, остается остаток в виде "лишних" для подсчета байт
-                totaSize += SIZE_INTERVAL;
+                totalSize += SIZE_INTERVAL;
 
                 DOUBLE percentTime = ((DOUBLE(testConfig.bufferSize - tmpBuf)) / testConfig.bufferSize) * valuesArray[i];
                 outputTime = totalTime + percentTime;
                 totalTime = valuesArray[i] - percentTime;
 
-                sprintf(buffer, "%d;%.6lf\n\0", totaSize, outputTime);
+                sprintf(buffer, "%d;%.6lf\n\0", (totalSize / (1 * MB)), outputTime);
                 WriteFile(hFile, buffer, _tcslen(buffer) * sizeof(TCHAR), &dwTemp, NULL);
             }
 
@@ -302,7 +302,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
         ranges[1] = average - range; // Левая граница
         ranges[2] = average + range; // Правая граница
         ranges[3] = average * 3; // Отклонение среднего (взято как 200% пока что)
-        ranges[4] = valuesArray[size-1]; // Максимум
+        ranges[4] = valuesArray[size - 1]; // Максимум
 
         for (DWORD i = 0; i < size; ++i)
             for (DWORD j = 1; j <= MAX_RANGES; ++j)
@@ -310,7 +310,7 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
                     ++iterations[j - 1];
                     break;
                 }
-        
+
         for (DWORD i = 0; i < MAX_ITERATIONS; ++i) {
             if (iterations[i] == 0)
                 continue;
@@ -329,9 +329,11 @@ VOID saveResults(DOUBLE* valuesArray, TCHAR* fileName, DWORD size, DWORD type) {
 */
 VOID fillBuffer(TCHAR* dataBuffer, DWORD sizeBuffer) {
     //тестовый массив данных
-    TCHAR Data[] = _T("0x10");
+    TCHAR Letter[] = _T("V");
+    dataBuffer[0] = Letter[0];
+    TCHAR Data[] = _T("/0");
     DWORD divider = sizeof(Data) / sizeof(Data[0]) - 1;
-    for (DWORD i = 0; i < sizeBuffer; i++)
+    for (DWORD i = 1; i < sizeBuffer; i++)
         dataBuffer[i] = Data[i % divider];
 }
 

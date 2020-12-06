@@ -3,21 +3,21 @@
 #include "GUIMain.h"
 
 // Строковые константы для размещения их в выпадающие списки
-CONST TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL"};
-CONST TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "1 MB", "4 MB", "8 MB", "16 MB" };
+CONST TCHAR* modes[] = { "WRITE_THROUGH", "RANDOM_ACCESS", "SEQUENTIAL" };
+CONST TCHAR* buffNames[] = { "1 KB", "4 KB", "8 KB", "40 KB", "1 MB", "4 MB", "8 MB" };
 CONST TCHAR* fileNames[] = { "128 MB", "256 MB", "512 MB", "1024 MB", "2048 MB" };
 CONST TCHAR* disks[26];
 CONST TCHAR* disksNames[26];
 CONST TCHAR* testCounts[] = { "1", "2", "3", "4", "5" };
 
 // Константы значений для юзер конфига
-DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 1 * MB, 4 * MB, 8 * MB, 16 * MB};
+DWORD buffSizes[] = { 1 * KB, 4 * KB, 8 * KB, 40 * KB, 1 * MB, 4 * MB, 8 * MB };
 UINT32 fileSizes[] = { 128 * MB, 256 * MB, 512 * MB, 1024 * MB, 2048 * MB };
 
 // Нужные переменные
 HWND btn_stop, btn_pause, btn_startRead, btn_startWrite,
 cb_list_files, cb_list_disks, cb_list_buffers, cb_list_testCounts, cb_buffering, text_read, text_write, pb_progress;
-HWND *rb_group_modes;
+HWND* rb_group_modes;
 
 // Переменные потока
 HANDLE workingThread;
@@ -44,16 +44,16 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		switch (msg.message) {
-			case SEND_TEST_RESULT: // Установка результата
-				TCHAR* res;
-				res = (TCHAR*)msg.lParam;
-				setResult(res);
-				break;
-			case SEND_PROGRESS_BAR_UPDATE: // Обновление прогресс бара
-				DWORD state;
-				state = *((DWORD*)msg.lParam);
-				SendMessage(pb_progress, PBM_SETPOS, state, 0);
-				break;
+		case SEND_TEST_RESULT: // Установка результата
+			TCHAR* res;
+			res = (TCHAR*)msg.lParam;
+			setResult(res);
+			break;
+		case SEND_PROGRESS_BAR_UPDATE: // Обновление прогресс бара
+			DWORD state;
+			state = *((DWORD*)msg.lParam);
+			SendMessage(pb_progress, PBM_SETPOS, state, 0);
+			break;
 		}
 
 		DispatchMessage(&msg);
@@ -64,9 +64,9 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 
 LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message) {
-		case WM_CREATE: onCreate(hwnd, message, wParam, lParam); break;
-		case WM_COMMAND: onCommand(hwnd, message, wParam, lParam); break;
-		case WM_DESTROY: PostQuitMessage(0); break;
+	case WM_CREATE: onCreate(hwnd, message, wParam, lParam); break;
+	case WM_COMMAND: onCommand(hwnd, message, wParam, lParam); break;
+	case WM_DESTROY: PostQuitMessage(0); break;
 	}
 
 	return DefWindowProc(hwnd, message, wParam, lParam);
@@ -149,9 +149,9 @@ VOID onCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 	if (HWND(lParam) == cb_buffering) {
 		BOOL checked = IsDlgButtonChecked(hwnd, cb_buffering_id);
-		if (checked) 
+		if (checked)
 			CheckDlgButton(hwnd, cb_buffering_id, BST_UNCHECKED);
-		else 
+		else
 			CheckDlgButton(hwnd, cb_buffering_id, BST_CHECKED);
 		userConfig.isBuffering = !checked;
 	}
@@ -159,7 +159,7 @@ VOID onCommand(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 //определение дисков
 VOID getDisks() {
-	
+
 	DWORD dr = GetLogicalDrives();
 
 	DWORD countDisk = 0; // Счетчик для записи в массив всех дисков
@@ -179,7 +179,7 @@ VOID getDisks() {
 			TCHAR* name = new TCHAR[MAX_PATH + 5]{ '(', diskChar, ':', ')', ' ' };
 			if (_tcslen(VolumeName) == 0)
 				_tcscat_s(name, MAX_PATH + 5, _T("Local Disk"));
-			else 
+			else
 				_tcscat_s(name, MAX_PATH + 5, VolumeName);
 
 			disksNames[countDisk] = name;
@@ -242,7 +242,7 @@ VOID stopTest() {
 VOID setResult(TCHAR* res) {
 	if (userConfig.typeTest == WRITE_TEST)
 		SetWindowText(text_write, res);
-	else 
+	else
 		SetWindowText(text_read, res);
 
 	SendMessage(pb_progress, PBM_SETPOS, 0, 0);
